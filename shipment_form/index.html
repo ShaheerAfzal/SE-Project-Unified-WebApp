@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Shipping Docs Generator</title>
+  <script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.1/dist/pizzip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.29.0/build/docxtemplater.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f4f6fb;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      padding: 28px 18px;
+      max-width: 700px;
+      width: 100%;
+      margin: 24px;
+    }
+    h2 {
+      text-align: center;
+      color: #2d3a4a;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+    h3 {
+      margin-top: 18px;
+      margin-bottom: 6px;
+      color: #4a5a6a;
+      font-size: 1.1em;
+      font-weight: 500;
+    }
+    form {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    label {
+      display: flex;
+      flex-direction: column;
+      font-size: 0.98em;
+      color: #3a4a5a;
+      margin: 0;
+      margin-bottom: 0;
+    }
+    input, textarea {
+      border: 1px solid #d1d6e0;
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin-top: 2px;
+      font-size: 1em;
+      background: #f8fafc;
+      transition: border-color 0.2s;
+      width: 100%;
+      box-sizing: border-box;
+      resize: vertical;
+      min-height: 32px;
+    }
+    textarea {
+      min-height: 40px;
+      max-height: 60px;
+    }
+    input:focus, textarea:focus {
+      border-color: #5b8def;
+      outline: none;
+      background: #fff;
+    }
+    button {
+      background: linear-gradient(90deg,#5b8def 0%,#3a7bd5 100%);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 12px 0;
+      font-size: 1.08em;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 10px;
+      box-shadow: 0 2px 8px rgba(91,141,239,0.08);
+      transition: background 0.2s, box-shadow 0.2s;
+      width: 100%;
+    }
+    button:hover {
+      background: linear-gradient(90deg,#3a7bd5 0%,#5b8def 100%);
+      box-shadow: 0 4px 16px rgba(91,141,239,0.14);
+    }
+    @media (min-width: 900px) {
+      .container {
+        max-width: 1367px;
+        padding: 32px 24px;
+      }
+      form {
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+        gap: 12px 14px;
+      }
+      h3 {
+        grid-column: 1 / -1;
+      }
+      button {
+        grid-column: 1 / -1;
+      }
+      /* Group related fields side-by-side */
+      label[for="R_NAME"], label[for="R_CITY"], label[for="R_STATE"], label[for="R_ZIP"], label[for="R_COUNTRY"],
+      label[for="QTY"], label[for="UNIT_WT"], label[for="TOTAL_WT"], label[for="INVOICE_NO"], label[for="UNIT_PRICE"],
+      label[for="TOTAL_PRICE"], label[for="P_NAME"], label[for="AWB"] {
+        grid-column: auto;
+      }
+      label[for="R_ADDRESS"], label[for="DESC"] {
+        grid-column: 1 / -1;
+      }
+    }
+    @media (max-width: 700px) {
+      .container {
+        max-width: 650px;
+        padding: 20px 8px;
+      }
+      form {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px 14px;
+      }
+      h3, button {
+        grid-column: 1 / -1;
+      }
+      label[for="R_ADDRESS"], label[for="DESC"] {
+        grid-column: 1 / -1;
+      }
+    }
+    /* Compact spacing for mobile */
+    @media (max-width: 480px) {
+      .container {
+        padding: 16px 6px;
+      }
+      input, textarea {
+        font-size: 0.98em;
+        padding: 7px 8px;
+      }
+      button {
+        padding: 10px 0;
+        font-size: 1em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Shipping Document Generator</h2>
+    <form id="docForm">
+      <h3>Recipient Info</h3>
+      <label for="R_NAME">Recipient Name: <input type="text" id="R_NAME"></label>
+      <label for="R_ADDRESS">Address: <textarea id="R_ADDRESS"></textarea></label>
+      <label for="R_CITY">City: <input type="text" id="R_CITY"></label>
+      <label for="R_STATE">State: <input type="text" id="R_STATE"></label>
+      <label for="R_ZIP">ZIP: <input type="text" id="R_ZIP"></label>
+      <label for="R_COUNTRY">Country: <input type="text" id="R_COUNTRY"></label>
+      <h3>Product Info</h3>
+      <label for="DESC">Description: <textarea id="DESC"></textarea></label>
+      <label for="QTY">Quantity: <input type="text" id="QTY"></label>
+      <label for="UNIT_WT">Unit Weight (include unit, e.g., 60g, 1.2kg): <input type="text" id="UNIT_WT"></label>
+      <label for="TOTAL_WT">Total Weight (include unit, e.g., 120g, 2.4kg): <input type="text" id="TOTAL_WT"></label>
+      <label for="INVOICE_NO">Invoice No: <input type="text" id="INVOICE_NO"></label>
+      <label for="UNIT_PRICE">Unit Price (include currency, e.g., $50, 100 PKR): <input type="text" id="UNIT_PRICE"></label>
+      <label for="TOTAL_PRICE">Total Price (include currency): <input type="text" id="TOTAL_PRICE"></label>
+      <label for="P_NAME">Product Name: <input type="text" id="P_NAME"></label>
+      <label for="AWB">AWB #: <input type="text" id="AWB"></label>
+      <button type="button" onclick="generateDocx()">Generate DOCX</button>
+    </form>
+  </div>
+  <script>
+    function formatDate(date) {
+      const options = { day: 'numeric', month: 'long', year: 'numeric' };
+      return date.toLocaleDateString('en-US', options); // e.g., 24 July, 2025
+    }
+
+    async function generateDocx() {
+      const today = new Date();
+      const formattedDate = formatDate(today);
+
+      const data = {
+        R_NAME: document.getElementById("R_NAME").value,
+        R_ADDRESS: document.getElementById("R_ADDRESS").value,
+        R_CITY: document.getElementById("R_CITY").value,
+        R_STATE: document.getElementById("R_STATE").value,
+        R_ZIP: document.getElementById("R_ZIP").value,
+        R_COUNTRY: document.getElementById("R_COUNTRY").value,
+        DATE: formattedDate,
+        DESC: document.getElementById("DESC").value,
+        QTY: document.getElementById("QTY").value,
+        UNIT_WT: document.getElementById("UNIT_WT").value,      // keeps unit
+        TOTAL_WT: document.getElementById("TOTAL_WT").value,    // keeps unit
+        INVOICE_NO: document.getElementById("INVOICE_NO").value,
+        UNIT_PRICE: document.getElementById("UNIT_PRICE").value,   // keeps currency
+        TOTAL_PRICE: document.getElementById("TOTAL_PRICE").value, // keeps currency
+        P_NAME: document.getElementById("P_NAME").value,
+        AWB: document.getElementById("AWB").value
+      };
+
+      // Fetch the DOCX template
+      const response = await fetch('template.docx');
+      const arrayBuffer = await response.arrayBuffer();
+
+      const zip = new PizZip(arrayBuffer);
+      const doc = new window.docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+      doc.setData(data);
+
+      try {
+        doc.render();
+      } catch (error) {
+        console.error(error);
+        alert("Error generating DOCX. Check console.");
+        return;
+      }
+
+      const out = doc.getZip().generate({ type: "blob" });
+      const link = document.createElement("a");
+      const fileDate = today.toISOString().slice(0,10); // YYYY-MM-DD
+      link.href = URL.createObjectURL(out);
+      link.download = `shipping_docs_${fileDate}.docx`;
+      link.click();
+    }
+  </script>
+</body>
+</html>
