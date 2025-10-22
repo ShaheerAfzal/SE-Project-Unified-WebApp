@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+{% load static %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Stream</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen">
+
+    <!-- Logo -->
+    <img src="{% static 'images/white.png' %}" alt="Logo" class="w-32 mb-4">
+
+    <!-- Title and Subtitle -->
+    <div class="text-center mb-8">
+        <h1 class="text-4xl font-bold">HLS Viewer<small>v1.1</small></h1>
+        <p class="text-lg text-gray-400">Powered by hls.js</p>
+    </div>
+
+    <!-- Video Section -->
+    <div class="w-full max-w-4xl">
+        <video id="video" controls autoplay height="450" class="w-full rounded-lg shadow-lg mb-4"></video>
+
+        <!-- Dropdown for Video Sources -->
+        <div class="mb-6">
+            <label for="videoSrc" class="block mb-2 text-lg font-semibold">Select Stream:</label>
+            <select id="videoSrc" class="w-full p-2 bg-gray-800 text-white border border-gray-700 rounded">
+                {% for s in streams %}
+                    <option value="{{ s.url }}">{{ s.name }}</option>
+                {% empty %}
+                    <option disabled>No active streams available</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Load Video Button -->
+        <button id="loadVideo" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded">
+            Load Video
+        </button>
+
+        <!-- Add Stream Button -->
+        <button id="openForm" class="w-full mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded">
+            + Add New Stream
+        </button>
+    </div>
+
+    <!-- Modal Form -->
+    <div id="formModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-gray-800 p-6 rounded-lg w-96">
+            <h2 class="text-xl font-bold mb-4 text-center">Add New Stream</h2>
+            <form id="addStreamForm">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <label class="block mb-2 font-semibold">Name</label>
+                    <input type="text" name="name" required class="w-full p-2 bg-gray-700 border border-gray-600 rounded">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2 font-semibold">URL (.m3u8)</label>
+                    <input type="url" name="url" required class="w-full p-2 bg-gray-700 border border-gray-600 rounded">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2 font-semibold">Description</label>
+                    <textarea name="description" class="w-full p-2 bg-gray-700 border border-gray-600 rounded"></textarea>
+                </div>
+                <div class="mb-4">
+                    <label class="inline-flex items-center">
+                        <input type="checkbox" name="is_active" checked class="mr-2"> Active
+                    </label>
+                </div>
+                <div class="flex justify-between">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        Save
+                    </button>
+                    <button type="button" id="closeForm" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const videoSrcInput = document.getElementById('videoSrc');
+        const formModal = document.getElementById('formModal');
+        const openFormBtn = document.getElementById('openForm');
+        const closeFormBtn = document.getElementById('closeForm');
+        const addStreamForm = document.getElementById('addStreamForm');
+
+        function loadVideo(src) {
+            if (Hls.isSupported()) {
+                const hls = new Hls();
+                hls.loadSource(src);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = src;
+                video.addEventListener('loadedmetadata', () => video.play());
+            }
+        }
+
+        document.getElementById('loadVideo').addEventListener('click', function() {
+            const newSrc = videoSrcInput.value;
+            if (newSrc) loadVideo(newSrc);
+        });
+
+        // Modal open/close
+        openFormBtn.addEventListener('click', () => formModal.classList.remove('hidden'));
+        closeFormBtn.addEventListener('click', () => formModal.classList.add('hidden'));
+
+        // Form submission — POST to Django API
+        addStreamForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(addStreamForm);
+            const data = Object.fromEntries(formData.entries());
+            data.is_active = formData.get('is_active') ? true : false;
+
+            const response = await fetch("/api/hls/streams/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value,
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                alert("Stream added successfully!");
+                formModal.classList.add('hidden');
+                window.location.reload();
+            } else {
+                alert("Error adding stream");
+            }
+        });
+
+        // Auto-load first stream
+        window.addEventListener('load', () => {
+            if (videoSrcInput.value) loadVideo(videoSrcInput.value);
+        });
+    </script>
+
+</body>
+</html>
