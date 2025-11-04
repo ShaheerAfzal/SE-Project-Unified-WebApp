@@ -37,6 +37,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+
+    #my apps
+
+    'HLS_viewer_backend',
+    'shipment_form_backend',
 ]
 
 MIDDLEWARE = [
