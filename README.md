@@ -96,4 +96,6 @@ class StreamViewSet(viewsets.ModelViewSet):
 - [Ibrahim Abdullah](https://github.com/Ibrahim5570)
 - [Ayesha Majid](https://github.com/ayeshamajid3)
 
+---
+
 _Disclaimer: For educational purposes as part of our Software Engineering course._
