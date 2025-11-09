@@ -72,8 +72,16 @@ class StreamViewSet(viewsets.ModelViewSet):
 
 ### Priority System:
 Since the Priority field is unavailable in our Jira setup, we use:
-- **Story Points**: 8-13 = High, 3-5 = Medium, 1-2 = Low
-- **Labels**: priority-p1-high, priority-p2-medium, priority-p3-low
+- **Story Points Reference**:
+    - 3 points: Small, well-understood task (~1-2 days)
+    - 5 points: Medium complexity (~3-4 days)
+    - 8 points: Complex with some unknowns (~5-6 days)
+    - 13 points: Very complex, significant unknowns (~1.5-2 weeks)
+  Total Project Estimate: 99 points
+- **Priority Legend**:
+    - 🔴 Critical - Must be completed for project success, core functionality
+    - 🟡 High - Important features that deliver significant value
+    - 🟢 Medium - Valuable enhancements but not blocking core functionality
 
 ### Scrum Tools:
 
