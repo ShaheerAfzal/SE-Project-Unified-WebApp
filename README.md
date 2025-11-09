@@ -68,6 +68,21 @@ class StreamViewSet(viewsets.ModelViewSet):
 
 ---
 
+## 👨🏻‍💻 Project Management
+
+### Priority System:
+Since the Priority field is unavailable in our Jira setup, we use:
+- **Story Points**: 8-13 = High, 3-5 = Medium, 1-2 = Low
+- **Labels**: priority-p1-high, priority-p2-medium, priority-p3-low
+
+### Scrum Tools:
+
+- Jira for backlog management and sprint tracking
+- GitHub for version control with feature branches
+- Daily stand-ups for team synchronization
+
+---
+
 ## 🎨 Navigation Features
 
 - **Gooey Effect**: Smooth blob animation during navigation
