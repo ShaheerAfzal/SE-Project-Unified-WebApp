@@ -11,6 +11,9 @@ body {
   background: #eaeef6;
   font-family: "Open Sans", sans-serif;
   min-height: 100vh;
+  /* Space for navbar - important! */
+  margin-left: 7rem !important;
+  padding: 1rem !important;
 }
 
 :root {
@@ -24,11 +27,12 @@ body {
   transform: translateY(-50%) scale(var(--navbar-scale, 1));
   background: #fff;
   border-radius: 10px;
-  padding: 1rem 0;
+  padding: 0.5rem 0;
   box-shadow: 0 0 40px rgba(0, 0, 0, 0.03);
-  height: 24.5rem; /* Fixed height: 7 items × 3.5rem */
-  width: 5.5rem; /* Fixed width */
+  height: 24.5rem;
+  width: 5.5rem;
   transform-origin: left center;
+  z-index: 50; /* Ensure navbar stays above other content */
 }
 
 .navbar__link {
@@ -40,6 +44,15 @@ body {
   width: 5.5rem;
   color: #6a778e;
   transition: 250ms ease all;
+  padding-top: 0.1rem;
+}
+
+/* Fine-tune icon positioning */
+.navbar__link i {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-1px); /* Moves icons up slightly */
 }
 
 /* Responsive scaling */
@@ -108,7 +121,7 @@ body {
   position: absolute;
   opacity: 0;
   z-index: -1;
-  top: 0;
+  top: 0.5rem;
   left: 1rem;
   width: 3.5rem;
   height: 3.5rem;
