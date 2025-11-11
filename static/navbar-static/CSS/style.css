@@ -1,19 +1,36 @@
 @import url("https://fonts.googleapis.com/css2?family=Open+Sans:wght@600&display=swap");
+
+/* ===== NAVBAR SCALING FIXES ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 body {
   background: #eaeef6;
   font-family: "Open Sans", sans-serif;
+  min-height: 100vh;
+}
+
+:root {
+  --navbar-scale: 1;
 }
 
 .navbar {
   position: fixed;
-  /* top: 1rem; */
   left: 1rem;
+  top: 50%;
+  transform: translateY(-50%) scale(var(--navbar-scale, 1));
   background: #fff;
   border-radius: 10px;
   padding: 1rem 0;
   box-shadow: 0 0 40px rgba(0, 0, 0, 0.03);
-  height: auto;
+  height: 24.5rem; /* Fixed height: 7 items × 3.5rem */
+  width: 5.5rem; /* Fixed width */
+  transform-origin: left center;
 }
+
 .navbar__link {
   position: relative;
   display: flex;
@@ -24,6 +41,45 @@ body {
   color: #6a778e;
   transition: 250ms ease all;
 }
+
+/* Responsive scaling */
+@media (max-height: 900px) {
+  :root {
+    --navbar-scale: 0.9;
+  }
+}
+
+@media (max-height: 768px) {
+  :root {
+    --navbar-scale: 0.8;
+  }
+}
+
+@media (max-height: 600px) {
+  :root {
+    --navbar-scale: 0.7;
+  }
+}
+
+@media (max-height: 480px) {
+  :root {
+    --navbar-scale: 0.6;
+  }
+}
+
+@media (min-height: 1200px) {
+  :root {
+    --navbar-scale: 1.1;
+  }
+}
+
+@media (min-height: 1440px) {
+  :root {
+    --navbar-scale: 1.2;
+  }
+}
+
+/* ===== ALL YOUR EXISTING ANIMATIONS BELOW - UNCHANGED ===== */
 .navbar__link span {
   position: absolute;
   left: 100%;
