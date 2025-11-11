@@ -49,6 +49,24 @@
         });
 
         loadVideo(defaultVideoSrc);
+        // Add error handling function
+function handleVideoErrors() {
+    video.addEventListener('error', function(e) {
+        console.error('Video error:', e);
+        alert('Error loading video stream. Please check the URL and try again.');
+    });
+
+    video.addEventListener('waiting', function() {
+        console.log('Video buffering...');
+    });
+
+    video.addEventListener('playing', function() {
+        console.log('Video playback started');
+    });
+}
+
+// Call this function after your existing loadVideo function
+handleVideoErrors();
     </script>
 {% endblock %}
 

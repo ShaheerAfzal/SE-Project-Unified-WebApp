@@ -166,6 +166,30 @@
         window.addEventListener('load', () => {
             if (videoSrcInput.value) loadVideo(videoSrcInput.value);
         });
+        // Add error handling function
+function handleVideoErrors() {
+    video.addEventListener('error', function(e) {
+        console.error('Video error:', e);
+        alert('Error loading video stream. Please check the URL and try again.');
+    });
+
+    video.addEventListener('waiting', function() {
+        console.log('Video buffering...');
+    });
+
+    video.addEventListener('playing', function() {
+        console.log('Video playback started');
+    });
+}
+
+// Auto-load when stream selection changes
+videoSrcInput.addEventListener('change', function() {
+    const newSrc = this.value;
+    if (newSrc) loadVideo(newSrc);
+});
+
+// Call error handling
+handleVideoErrors();
     </script>
 
 {% endblock %}
