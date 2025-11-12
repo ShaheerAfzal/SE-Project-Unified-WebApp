@@ -95,7 +95,7 @@ The following stream types may encounter playback issues:
 
 The application includes comprehensive error handling with real-time validation:
 
-## 🔍 Validation Test Scenarios
+### 🔍 Validation Test Scenarios
 
 🎯 Test 1: Invalid URL Format
 - Enter URL: https://example.com/not-hls.mp4
