@@ -68,6 +68,73 @@ class StreamViewSet(viewsets.ModelViewSet):
 
 ---
 
+## 📹 Supported Stream Formats
+
+The HLS Viewer successfully handles the following stream types:
+
+## ✅ Working Formats
+
+1. Standard MP4-based HLS - Basic HLS streams with MP4 segments
+2. Multi-bitrate Adaptive Streams - Adaptive bitrate switching streams
+3. High Quality VOD - High-quality Video on Demand content
+4. Apple Reference Streams - Official Apple HLS reference streams
+
+## ❌ Problematic Formats
+
+The following stream types may encounter playback issues:
+- AES-128 encrypted streams - Encryption key authentication required
+- DRM-protected streams (FairPlay, Widevine, PlayReady) - DRM license servers needed
+- CORS-restricted streams - Cross-origin resource sharing limitations
+- HTTP (not HTTPS) streams on HTTPS pages - Mixed content security restrictions
+- Geographically restricted content - Regional access limitations
+- Live streams - May have compatibility issues with certain HLS implementations
+
+---
+
+## 🧪 Error Handling & Validation Tests
+
+The application includes comprehensive error handling with real-time validation:
+
+## 🔍 Validation Test Scenarios
+🎯 Test 1: Invalid URL Format
+- Enter URL: https://example.com/not-hls.mp4
+- Expected: Red error message "Not a valid HLS stream (missing #EXTM3U header)"
+
+🎯 Test 2: Non-Existent Server
+- Enter URL: https://thisserverdoesnotexist12345.com/stream.m3u8
+- Expected: Red error message "Cannot access URL: Network error"
+
+🎯 Test 3: Server Error (404)
+- Enter URL: https://test-streams.mux.dev/this-does-not-exist.m3u8
+- Expected: Red error message "Server returned 404 Not Found"
+
+🎯 Test 4: Valid URL but Wrong Format
+- Enter URL: (https://google.com) (valid URL but not HLS)
+- Expected: Red error message "Not a valid HLS stream"
+
+🎯 Test 5: Working Stream Validation
+- Enter URL: https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8
+- Expected: Green success message "✅ URL looks good - valid HLS stream"
+
+🎯 Test 6: Form Submission Blocking
+- Enter invalid URL and click Save
+- Expected: Form stays open with error message, doesn't submit
+
+🎯 Test 7: Video Playback Errors
+- Select failing stream and click "Load Video"
+- Expected: Browser alert "Error loading video stream..." with console logs
+
+🎯 Test 8: Auto-Load on Dropdown Change
+- Select different streams from dropdown
+- Expected: Video automatically reloads with new stream
+
+🎯 Test 9: Real-time Validation States
+- Type URL and observe validation states:
+    - 🔵 "Testing URL..." (blue)
+    - ✅ "URL looks good..." (green)
+
+---
+
 ## 👨🏻‍💻 Project Management
 
 ### Priority System:
