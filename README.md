@@ -72,14 +72,14 @@ class StreamViewSet(viewsets.ModelViewSet):
 
 The HLS Viewer successfully handles the following stream types:
 
-## ✅ Working Formats
+### ✅ Working Formats
 
 1. Standard MP4-based HLS - Basic HLS streams with MP4 segments
 2. Multi-bitrate Adaptive Streams - Adaptive bitrate switching streams
 3. High Quality VOD - High-quality Video on Demand content
 4. Apple Reference Streams - Official Apple HLS reference streams
 
-## ❌ Problematic Formats
+### ❌ Problematic Formats
 
 The following stream types may encounter playback issues:
 - AES-128 encrypted streams - Encryption key authentication required
@@ -96,6 +96,7 @@ The following stream types may encounter playback issues:
 The application includes comprehensive error handling with real-time validation:
 
 ## 🔍 Validation Test Scenarios
+
 🎯 Test 1: Invalid URL Format
 - Enter URL: https://example.com/not-hls.mp4
 - Expected: Red error message "Not a valid HLS stream (missing #EXTM3U header)"
@@ -109,7 +110,7 @@ The application includes comprehensive error handling with real-time validation:
 - Expected: Red error message "Server returned 404 Not Found"
 
 🎯 Test 4: Valid URL but Wrong Format
-- Enter URL: (https://google.com) (valid URL but not HLS)
+- Enter URL: https://google.com (valid URL but not HLS)
 - Expected: Red error message "Not a valid HLS stream"
 
 🎯 Test 5: Working Stream Validation
