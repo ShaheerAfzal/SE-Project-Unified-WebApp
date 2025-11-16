@@ -64,7 +64,7 @@ def extract_placeholders_from_docx(path_or_file):
 
     return sorted(set(normalized))
 
-
+#func
 class DocumentTemplate(models.Model):
     """
     Stores an uploaded .docx template and its extracted field definitions.
