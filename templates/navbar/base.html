@@ -11,55 +11,94 @@
 
   <!-- ✅ Feather icons CDN -->
   <script src="https://unpkg.com/feather-icons"></script>
+  
+  <!-- ✅ Add loading styles -->
+  <style>
+    /* Hide content initially */
+    .content-wrapper {
+      opacity: 0;
+      transition: opacity 0.3s ease-in-out;
+    }
+    
+    /* Show loading indicator */
+    .loading-indicator {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #f8f9fa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      transition: opacity 0.3s ease-in-out;
+    }
+    
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #e0e0e0;
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    /* When page is loaded, hide loading and show content */
+    body.loaded .loading-indicator {
+      opacity: 0;
+      pointer-events: none;
+    }
+    
+    body.loaded .content-wrapper {
+      opacity: 1;
+    }
+  </style>
 </head>
 <body>
-  <nav class="navbar">
-    <ul class="navbar__menu">
-      <li class="navbar__item"><a href="#" class="navbar__link"><i data-feather="home"></i><span>Home</span></a></li>
-      <li class="navbar__item"><a href="#" class="navbar__link"><i data-feather="message-square"></i><span>Messages</span></a></li>
-      <li class="navbar__item"><a href="#" class="navbar__link"><i data-feather="users"></i><span>Customers</span></a></li>
-      <li class="navbar__item"><a href="#" class="navbar__link"><i data-feather="folder"></i><span>Projects</span></a></li>
-      <li class="navbar__item"><a href="#" class="navbar__link"><i data-feather="archive"></i><span>Resources</span></a></li>
-      <li class="navbar__item"><a href="#" class="navbar__link"><i data-feather="help-circle"></i><span>Help</span></a></li>
-      <li class="navbar__item"><a href="#" class="navbar__link"><i data-feather="settings"></i><span>Settings</span></a></li>
-    </ul>
-  </nav>
+  <!-- Loading indicator -->
+  <div class="loading-indicator">
+    <div class="spinner"></div>
+  </div>
+  
+  <!-- All your content wrapped for smooth appearance -->
+  <div class="content-wrapper">
+    <nav class="navbar">
+      <ul class="navbar__menu">
+        <li class="navbar__item"><a href="#" class="navbar__link"><i data-feather="home"></i><span>Home</span></a></li>
+        <li class="navbar__item"><a href="#" class="navbar__link"><i data-feather="message-square"></i><span>Messages</span></a></li>
+        <li class="navbar__item"><a href="#" class="navbar__link"><i data-feather="users"></i><span>Customers</span></a></li>
+        <li class="navbar__item"><a href="#" class="navbar__link"><i data-feather="folder"></i><span>Projects</span></a></li>
+        <li class="navbar__item"><a href="#" class="navbar__link"><i data-feather="archive"></i><span>Resources</span></a></li>
+        <li class="navbar__item"><a href="#" class="navbar__link"><i data-feather="help-circle"></i><span>Help</span></a></li>
+        <li class="navbar__item"><a href="#" class="navbar__link"><i data-feather="settings"></i><span>Settings</span></a></li>
+      </ul>
+    </nav>
 
-  <!-- ✅ Where child templates inject content -->
-  {% block content %}{% endblock %}
+    <!-- ✅ Where child templates inject content -->
+    {% block content %}{% endblock %}
+  </div>
 
   <!-- ✅ Include your JS file -->
   <script src="{% static 'navbar-static/JS/script.js' %}"></script>
 
-  <!-- ✅ Required for Feather icons to render -->
+  <!-- ✅ Script to handle loading -->
   <script>
-    feather.replace();
+    // Wait for everything to load
+    window.addEventListener('load', function() {
+      // Wait a tiny bit more to ensure everything is ready
+      setTimeout(function() {
+        document.body.classList.add('loaded');
+        
+        // Initialize feather icons after page is shown
+        feather.replace();
+      }, 100);
+    });
   </script>
 </body>
 </html>
-
-{% comment %} <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Navbar</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://unpkg.com/feather-icons"></script>
-</head>
-<body>
-  <nav class="navbar">
-    <ul class="navbar__menu">
-      <li class="navbar__item"><a href="#" class="navbar__link"><i data-feather="home"></i><span>Home</span></a></li>
-      <li class="navbar__item"><a href="#" class="navbar__link"><i data-feather="message-square"></i><span>Messages</span></a></li>
-      <li class="navbar__item"><a href="#" class="navbar__link"><i data-feather="users"></i><span>Customers</span></a></li>
-      <li class="navbar__item"><a href="#" class="navbar__link"><i data-feather="folder"></i><span>Projects</span></a></li>
-      <li class="navbar__item"><a href="#" class="navbar__link"><i data-feather="archive"></i><span>Resources</span></a></li>
-      <li class="navbar__item"><a href="#" class="navbar__link"><i data-feather="help-circle"></i><span>Help</span></a></li>
-      <li class="navbar__item"><a href="#" class="navbar__link"><i data-feather="settings"></i><span>Settings</span></a></li>
-    </ul>
-  </nav>
-
-  <script src="script.js"></script>
-</body>
-</html> {% endcomment %}
