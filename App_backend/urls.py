@@ -23,4 +23,5 @@ urlpatterns = [
     #app urls 
 
     path('api/hls/', include('HLS_viewer_backend.urls')),
+    path('api/shipment/', include('shipment_form_backend.urls')),
 ]

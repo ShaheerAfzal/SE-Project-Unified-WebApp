@@ -1,13 +1,16 @@
-# urls.py
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from . import views
+from HLS_viewer_backend.views import (
+    DocumentTemplateViewSet,
+    GeneratedDocumentViewSet,
+    api_overview
+)
 
 router = DefaultRouter()
-router.register(r'templates', views.DocumentTemplateViewSet, basename='template')
-router.register(r'documents', views.GeneratedDocumentViewSet, basename='document')
+router.register(r'templates', DocumentTemplateViewSet, basename='document-templates')
+router.register(r'documents', GeneratedDocumentViewSet, basename='generated-documents')
 
 urlpatterns = [
-    path('api/', include(router.urls)),
-    path('api/overview/', views.api_overview, name='api-overview'),
+    path('', api_overview, name='api-overview'),
+    path('', include(router.urls)),
 ]

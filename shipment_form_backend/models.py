@@ -64,12 +64,13 @@ def extract_placeholders_from_docx(path_or_file):
 
     return sorted(set(normalized))
 
+#func
 class DocumentTemplate(models.Model):
     """
     Stores an uploaded .docx template and its extracted field definitions.
-    `fields` stores a mapping of placeholder_key -> friendly_label (optional).
+    fields stores a mapping of placeholder_key -> friendly_label (optional).
       Example: {"PRODUCT_NAME": "Product Name", "QUANTITY": "Quantity"}
-    `key_field` is one of the placeholder keys used as the primary identifier for documents.
+    key_field is one of the placeholder keys used as the primary identifier for documents.
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
@@ -79,16 +80,15 @@ class DocumentTemplate(models.Model):
     key_field = models.CharField(max_length=255, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    is_active = models.BooleanField(default=True)
 
-    def __str__(self):
+    def _str_(self):
         return self.name
 
     def extract_and_populate_fields(self):
         """
         Extract placeholders from the docx file and populate self.fields
         if fields is empty or if the file changed.
-        Uses the `extract_placeholders_from_docx` helper.
+        Uses the extract_placeholders_from_docx helper.
         Friendly labels default to a humanized version of the key.
         """
         # open underlying file for reading
@@ -174,41 +174,25 @@ class GeneratedDocument(models.Model):
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
-    template = models.ForeignKey(DocumentTemplate, on_delete=models.CASCADE, related_name="generated_documents")
+    template = models.ForeignKey(DocumentTemplate, on_delete=models.CASCADE, related_name="documents")
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
     created_at = models.DateTimeField(auto_now_add=True)
     field_values = models.JSONField()  # mapping key -> value
     key_field_value = models.CharField(max_length=255, blank=True, null=True)
-    # Store the generated file for download
-    generated_file = models.FileField(upload_to="generated_docs/", null=True, blank=True)
-    document_name = models.CharField(max_length=255, default="Generated Document")
+    # optionally store the generated file (commented out)
+    # file = models.FileField(upload_to="generated/", null=True, blank=True)
 
-    def __str__(self):
+    def _str_(self):
         return f"{self.template.name} - {self.key_field_value or self.created_at.isoformat()}"
 
     def generate_and_attach_file(self):
         """
-        Generate .docx bytes and save to self.generated_file
+        Generate .docx bytes and optionally save to self.file if you enabled it.
         Returns a BytesIO of the generated docx.
         """
         out = self.template.generate_filled_docx_bytes(self.field_values)
-        
-        # Save the generated file
-        filename = f"{self.template.name}_{self.key_field_value or timezone.now().strftime('%Y%m%d%H%M%S')}.docx"
-        self.generated_file.save(filename, ContentFile(out.read()), save=True)
+        # If you want to attach/save the generated file:
+        # filename = f"{self.template.name}_{self.key_field_value or timezone.now().strftime('%Y%m%d%H%M%S')}.docx"
+        # self.file.save(filename, ContentFile(out.read()), save=True)
         out.seek(0)
         return out
-
-    def get_preview_data(self):
-        """
-        Return field values in a format suitable for frontend preview
-        """
-        return {
-            'id': str(self.id),
-            'template_name': self.template.name,
-            'document_name': self.document_name,
-            'created_at': self.created_at.isoformat(),
-            'key_field_value': self.key_field_value,
-            'field_values': self.field_values,
-            'download_url': self.generated_file.url if self.generated_file else None
-        }
