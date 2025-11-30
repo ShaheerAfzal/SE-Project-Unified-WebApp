@@ -254,6 +254,35 @@
             display: block;
         }
 
+        /* File Upload */
+        .file-upload {
+            border: 2px dashed var(--border-color);
+            border-radius: 0.5rem;
+            padding: 2rem;
+            text-align: center;
+            transition: border-color 0.3s;
+            cursor: pointer;
+        }
+
+        .file-upload:hover {
+            border-color: var(--primary-blue);
+        }
+
+        .file-upload.dragover {
+            border-color: var(--primary-blue);
+            background: rgba(37, 99, 235, 0.05);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: var(--text-gray);
+            margin-bottom: 1rem;
+        }
+
         /* Table */
         .table-container {
             overflow-x: auto;
@@ -535,6 +564,46 @@
             font-weight: 700;
             color: var(--text-dark);
         }
+
+        /* Connection Status */
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .connection-status.connected {
+            background: var(--success);
+            color: white;
+        }
+
+        .connection-status.disconnected {
+            background: var(--danger);
+            color: white;
+        }
+
+        .connection-status.unknown {
+            background: var(--warning);
+            color: white;
+        }
+
+        /* Config Panel */
+        .config-panel {
+            background: var(--bg-white);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border-left: 4px solid var(--primary-blue);
+        }
+
+        .config-panel h3 {
+            color: var(--primary-blue);
+            margin-bottom: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -547,10 +616,14 @@
             <nav>
                 <ul class="nav-menu">
                     <li><a href="#" class="nav-link active" data-section="dashboard">Dashboard</a></li>
+                    <li><a href="#" class="nav-link" data-section="templates">Templates</a></li>
                     <li><a href="#" class="nav-link" data-section="documents">Documents</a></li>
                     <li><a href="#" class="nav-link" data-section="create">Generate Document</a></li>
                 </ul>
             </nav>
+            <div class="connection-status unknown" id="connectionStatus">
+                <span>🔍 Checking connection...</span>
+            </div>
         </div>
     </header>
 
@@ -568,6 +641,25 @@
         <section class="section active" id="dashboard">
             <div class="section-header">
                 <h2>Dashboard Overview</h2>
+            </div>
+
+            <!-- Configuration Panel -->
+            <div class="config-panel">
+                <h3>🔧 Backend Configuration</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Backend URL</label>
+                        <input type="text" class="form-input" id="backendUrl" value="http://localhost:8000" placeholder="http://localhost:8000">
+                        <div class="error-message">Enter a valid URL</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">API Status</label>
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <span id="apiStatusText">Checking...</span>
+                            <button class="btn btn-secondary" onclick="testConnection()">Test Connection</button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Statistics Cards -->
@@ -609,6 +701,88 @@
                         <tbody id="recentDocumentsTable">
                             <tr>
                                 <td colspan="5" style="text-align: center; padding: 2rem;">Loading documents...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Templates Section -->
+        <section class="section" id="templates">
+            <div class="section-header">
+                <h2>Document Templates</h2>
+            </div>
+
+            <!-- Connection Warning -->
+            <div id="connectionWarning" class="card" style="border-left: 4px solid var(--warning); display: none;">
+                <h3 style="color: var(--warning); margin-bottom: 1rem;">⚠️ Connection Issue</h3>
+                <p>Cannot connect to the backend server. Please check:</p>
+                <ul style="margin: 1rem 0; padding-left: 1.5rem;">
+                    <li>Is your Django server running? (Run: <code>python manage.py runserver</code>)</li>
+                    <li>Is the backend URL correct? (Current: <span id="currentBackendUrl"></span>)</li>
+                    <li>Check the browser console for detailed errors</li>
+                </ul>
+                <button class="btn btn-secondary" onclick="showSection('dashboard')">Check Configuration</button>
+            </div>
+
+            <!-- Upload Template Card -->
+            <div class="card">
+                <h3 style="margin-bottom: 1rem; color: var(--primary-blue);">📤 Upload New Template</h3>
+                <form id="uploadTemplateForm" onsubmit="uploadTemplate(event)">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Template Name <span class="required">*</span></label>
+                            <input type="text" class="form-input" name="name" required placeholder="e.g., Shipping Label Template">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Key Field (Optional)</label>
+                            <input type="text" class="form-input" name="key_field" placeholder="e.g., INVOICE_NO">
+                            <div class="error-message">Enter the main identifier field</div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group full-width">
+                        <label class="form-label">Template File (.docx) <span class="required">*</span></label>
+                        <div class="file-upload" id="fileUploadArea" onclick="document.getElementById('templateFile').click()">
+                            <div class="upload-icon">📁</div>
+                            <div style="color: var(--text-gray); margin-bottom: 0.5rem;">
+                                Click to upload or drag and drop
+                            </div>
+                            <div style="font-size: 0.875rem; color: var(--text-gray);">
+                                DOCX files only
+                            </div>
+                            <input type="file" id="templateFile" class="file-input" accept=".docx" required>
+                        </div>
+                        <div id="fileName" style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--text-gray);"></div>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; margin-top: 2rem; justify-content: flex-end;">
+                        <button type="button" class="btn btn-secondary" onclick="resetUploadForm()">Reset</button>
+                        <button type="submit" class="btn btn-primary">Upload Template</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Templates List -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Available Templates</h3>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Fields</th>
+                                <th>Key Field</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="templatesTable">
+                            <tr>
+                                <td colspan="5" style="text-align: center; padding: 2rem;">No templates available. Upload your first template above.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -699,9 +873,9 @@
     </div>
 
     <script>
-        // Configuration
-        const API_BASE_URL = 'http://localhost:8000'; // Change this to your Django backend URL
-        
+        // Configuration - Now configurable
+        let API_BASE_URL = 'http://localhost:8000'; // Default value
+
         // State Management
         let documents = [];
         let filteredDocuments = [];
@@ -711,14 +885,88 @@
         const itemsPerPage = 10;
         let sortColumn = 'created_at';
         let sortDirection = 'desc';
+        let isConnected = false;
 
         // Initialize App
         document.addEventListener('DOMContentLoaded', () => {
-            loadDocuments();
+            loadConfiguration();
+            testConnection().then(() => {
+                if (isConnected) {
+                    loadTemplates();
+                    loadDocuments();
+                }
+            });
             setupEventListeners();
             loadDraft();
             updateStats();
         });
+
+        // Configuration Management
+        function loadConfiguration() {
+            const savedUrl = localStorage.getItem('backendUrl');
+            if (savedUrl) {
+                document.getElementById('backendUrl').value = savedUrl;
+                API_BASE_URL = savedUrl;
+            }
+            updateConnectionUI();
+        }
+
+        function saveConfiguration() {
+            const url = document.getElementById('backendUrl').value;
+            if (url) {
+                API_BASE_URL = url.endsWith('/') ? url.slice(0, -1) : url;
+                localStorage.setItem('backendUrl', API_BASE_URL);
+                updateConnectionUI();
+                showToast('Configuration saved', 'success');
+            }
+        }
+
+        function updateConnectionUI() {
+            document.getElementById('currentBackendUrl').textContent = API_BASE_URL;
+        }
+
+        // Connection Testing
+        async function testConnection() {
+            const statusElement = document.getElementById('connectionStatus');
+            const statusText = document.getElementById('apiStatusText');
+            
+            statusElement.className = 'connection-status unknown';
+            statusElement.innerHTML = '<span>🔍 Testing connection...</span>';
+            statusText.textContent = 'Testing...';
+
+            try {
+                // Test with a simple GET request to templates endpoint
+                const response = await fetch(`${API_BASE_URL}/templates/`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                if (response.ok) {
+                    isConnected = true;
+                    statusElement.className = 'connection-status connected';
+                    statusElement.innerHTML = '<span>✅ Connected to backend</span>';
+                    statusText.textContent = 'Connected';
+                    document.getElementById('connectionWarning').style.display = 'none';
+                    showToast('Successfully connected to backend!', 'success');
+                    return true;
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                isConnected = false;
+                statusElement.className = 'connection-status disconnected';
+                statusElement.innerHTML = '<span>❌ Connection failed</span>';
+                statusText.textContent = 'Failed to connect';
+                document.getElementById('connectionWarning').style.display = 'block';
+                updateConnectionUI();
+                
+                console.error('Connection test failed:', error);
+                showToast('Cannot connect to backend server. Check if Django is running.', 'error');
+                return false;
+            }
+        }
 
         // Event Listeners
         function setupEventListeners() {
@@ -736,6 +984,50 @@
             
             // Template selection
             setupTemplateSelection();
+
+            // File upload handling
+            setupFileUpload();
+
+            // Backend URL changes
+            document.getElementById('backendUrl').addEventListener('change', () => {
+                saveConfiguration();
+                testConnection();
+            });
+        }
+
+        // File Upload Handling
+        function setupFileUpload() {
+            const fileInput = document.getElementById('templateFile');
+            const fileUploadArea = document.getElementById('fileUploadArea');
+            const fileName = document.getElementById('fileName');
+
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    fileName.textContent = `Selected file: ${file.name}`;
+                }
+            });
+
+            // Drag and drop handling
+            fileUploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                fileUploadArea.classList.add('dragover');
+            });
+
+            fileUploadArea.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                fileUploadArea.classList.remove('dragover');
+            });
+
+            fileUploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                fileUploadArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    fileInput.files = files;
+                    fileName.textContent = `Selected file: ${files[0].name}`;
+                }
+            });
         }
 
         // Template Selection
@@ -838,74 +1130,136 @@
 
             if (sectionId === 'documents') {
                 loadDocuments();
+            } else if (sectionId === 'templates') {
+                loadTemplates();
             }
         }
 
         // API Functions
         async function apiRequest(endpoint, method = 'GET', data = null) {
+            if (!isConnected) {
+                const connected = await testConnection();
+                if (!connected) {
+                    throw new Error('Not connected to backend server');
+                }
+            }
+
             showLoading();
             try {
                 const options = {
                     method,
                     headers: {
                         'Content-Type': 'application/json',
-                    }
+                    },
+                    credentials: 'include' // Important for CSRF cookies
                 };
 
-                if (data) {
+                if (data && method !== 'GET') {
                     options.body = JSON.stringify(data);
                 }
 
                 const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
                 
                 if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.detail || error.message || 'API request failed');
+                    // Handle 404 specifically (no templates/documents yet)
+                    if (response.status === 404) {
+                        return [];
+                    }
+                    const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
+                    throw new Error(error.detail || error.message || `HTTP ${response.status}`);
+                }
+
+                // For 204 No Content responses
+                if (response.status === 204) {
+                    return null;
                 }
 
                 return await response.json();
             } catch (error) {
-                showToast('Error: ' + error.message, 'error');
+                console.error(`API Request failed: ${method} ${endpoint}`, error);
+                if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                    isConnected = false;
+                    testConnection(); // Update connection status
+                    throw new Error('Cannot connect to backend server. Make sure Django is running on ' + API_BASE_URL);
+                }
                 throw error;
             } finally {
                 hideLoading();
             }
         }
 
-        // Load Documents
-        async function loadDocuments() {
+        // Upload Template
+        async function uploadTemplate(event) {
+            event.preventDefault();
+            
+            if (!isConnected) {
+                showToast('Not connected to backend server', 'error');
+                return;
+            }
+
+            const formData = new FormData(event.target);
+            const fileInput = document.getElementById('templateFile');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showToast('Please select a template file', 'error');
+                return;
+            }
+
+            const uploadData = new FormData();
+            uploadData.append('name', formData.get('name'));
+            uploadData.append('key_field', formData.get('key_field') || '');
+            uploadData.append('file', file);
+
+            showLoading();
             try {
-                // Load templates
-                const templatesData = await apiRequest('/templates/');
-                templates = templatesData;
-                updateTemplateDropdown();
-                
-                // Load documents
-                const documentsData = await apiRequest('/documents/');
-                documents = documentsData.map(doc => ({
-                    id: doc.id,
-                    key_field_value: doc.key_field_value || 'N/A',
-                    template_name: getTemplateName(doc.template),
-                    template_id: doc.template,
-                    field_values: doc.field_values,
-                    field_count: Object.keys(doc.field_values || {}).length,
-                    created_at: doc.created_at,
-                    created_by: doc.created_by
-                }));
-                
-                filteredDocuments = [...documents];
-                renderDocumentsTable();
-                renderRecentDocuments();
-                updateStats();
+                const response = await fetch(`${API_BASE_URL}/templates/`, {
+                    method: 'POST',
+                    body: uploadData,
+                    credentials: 'include' // Important for CSRF
+                });
+
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({ detail: 'Upload failed' }));
+                    throw new Error(error.detail || error.message || 'Upload failed');
+                }
+
+                const result = await response.json();
+                showToast('Template uploaded successfully!', 'success');
+                resetUploadForm();
+                await loadTemplates();
+                showSection('create'); // Switch to create section to use the new template
             } catch (error) {
-                console.error('Error loading documents:', error);
-                showToast('Error loading documents: ' + error.message, 'error');
+                console.error('Upload failed:', error);
+                showToast('Failed to upload template: ' + error.message, 'error');
+            } finally {
+                hideLoading();
             }
         }
 
-        function getTemplateName(templateId) {
-            const template = templates.find(t => t.id === templateId);
-            return template ? template.name : 'Unknown Template';
+        function resetUploadForm() {
+            document.getElementById('uploadTemplateForm').reset();
+            document.getElementById('fileName').textContent = '';
+        }
+
+        // Load Templates
+        async function loadTemplates() {
+            try {
+                const templatesData = await apiRequest('/templates/');
+                templates = Array.isArray(templatesData) ? templatesData : [];
+                updateTemplateDropdown();
+                renderTemplatesTable();
+                updateStats();
+            } catch (error) {
+                console.error('Error loading templates:', error);
+                // If it's a 404, that's fine - no templates yet
+                if (error.message.includes('404')) {
+                    templates = [];
+                    renderTemplatesTable();
+                    return;
+                }
+                showToast('Error loading templates: ' + error.message, 'error');
+            }
         }
 
         function updateTemplateDropdown() {
@@ -919,6 +1273,131 @@
                     templateSelect.appendChild(option);
                 });
             }
+        }
+
+        // Render Templates Table
+        function renderTemplatesTable() {
+            const tbody = document.getElementById('templatesTable');
+            
+            if (templates.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem;">No templates available. Upload your first template above.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = templates.map(template => `
+                <tr>
+                    <td><strong>${template.name}</strong></td>
+                    <td>${Object.keys(template.fields || {}).length} fields</td>
+                    <td>${template.key_field || 'Not set'}</td>
+                    <td>${formatDate(template.created_at)}</td>
+                    <td>
+                        <div class="action-btns">
+                            <button class="icon-btn" onclick="viewTemplate('${template.id}')" title="View Details">👁️</button>
+                            <button class="icon-btn" onclick="deleteTemplate('${template.id}')" title="Delete">🗑️</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // View Template
+        async function viewTemplate(templateId) {
+            try {
+                const template = templates.find(t => t.id === templateId);
+                if (!template) return;
+
+                const fields = await apiRequest(`/templates/${templateId}/fields/`);
+
+                const modalContent = `
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+                        <div>
+                            <h3 style="color: var(--primary-blue); margin-bottom: 1rem;">📋 Template Information</h3>
+                            <p><strong>Name:</strong> ${template.name}</p>
+                            <p><strong>Key Field:</strong> ${template.key_field || 'Not set'}</p>
+                            <p><strong>Created:</strong> ${formatDate(template.created_at)}</p>
+                            <p><strong>Fields Count:</strong> ${Object.keys(fields.fields || {}).length}</p>
+                        </div>
+                        <div>
+                            <h3 style="color: var(--primary-blue); margin-bottom: 1rem;">📊 Available Fields</h3>
+                            ${Object.keys(fields.fields || {}).map(key => `
+                                <p><strong>${key}:</strong> ${fields.fields[key]}</p>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: flex-end;">
+                        <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+                        <button class="btn btn-primary" onclick="useTemplate('${template.id}')">Use This Template</button>
+                        <button class="btn btn-danger" onclick="deleteTemplate('${template.id}')">Delete Template</button>
+                    </div>
+                `;
+
+                document.getElementById('documentDetails').innerHTML = modalContent;
+                document.getElementById('documentModal').classList.add('show');
+            } catch (error) {
+                showToast('Error loading template details', 'error');
+            }
+        }
+
+        function useTemplate(templateId) {
+            const templateSelect = document.getElementById('templateSelect');
+            if (templateSelect) {
+                templateSelect.value = templateId;
+                templateSelect.dispatchEvent(new Event('change'));
+            }
+            closeModal();
+            showSection('create');
+        }
+
+        // Delete Template
+        async function deleteTemplate(templateId) {
+            if (!confirm('Are you sure you want to delete this template? This will not affect existing documents.')) return;
+
+            try {
+                await apiRequest(`/templates/${templateId}/`, 'DELETE');
+                showToast('Template deleted successfully!', 'success');
+                closeModal();
+                await loadTemplates();
+            } catch (error) {
+                showToast('Failed to delete template', 'error');
+            }
+        }
+
+        // Load Documents
+        async function loadDocuments() {
+            try {
+                const documentsData = await apiRequest('/documents/');
+                documents = Array.isArray(documentsData) ? documentsData.map(doc => ({
+                    id: doc.id,
+                    key_field_value: doc.key_field_value || 'N/A',
+                    template_name: getTemplateName(doc.template),
+                    template_id: doc.template,
+                    field_values: doc.field_values,
+                    field_count: Object.keys(doc.field_values || {}).length,
+                    created_at: doc.created_at,
+                    created_by: doc.created_by
+                })) : [];
+                
+                filteredDocuments = [...documents];
+                renderDocumentsTable();
+                renderRecentDocuments();
+                updateStats();
+            } catch (error) {
+                console.error('Error loading documents:', error);
+                // If it's a 404, that's fine - no documents yet
+                if (error.message.includes('404')) {
+                    documents = [];
+                    filteredDocuments = [];
+                    renderDocumentsTable();
+                    renderRecentDocuments();
+                    return;
+                }
+                showToast('Error loading documents: ' + error.message, 'error');
+            }
+        }
+
+        function getTemplateName(templateId) {
+            const template = templates.find(t => t.id === templateId);
+            return template ? template.name : 'Unknown Template';
         }
 
         // Update Statistics
@@ -1146,7 +1625,9 @@
         // Download Document
         async function downloadDocument(documentId) {
             try {
-                const response = await fetch(`${API_BASE_URL}/documents/${documentId}/preview/`);
+                const response = await fetch(`${API_BASE_URL}/documents/${documentId}/preview/`, {
+                    credentials: 'include'
+                });
                 if (!response.ok) throw new Error('Download failed');
                 
                 const blob = await response.blob();
