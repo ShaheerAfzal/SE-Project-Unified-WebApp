@@ -4,425 +4,153 @@
 {% block title %}Shipment Form Generator{% endblock %}
 
 {% block content %}
+<!-- 1. Load CSS -->
+<link rel="stylesheet" href="{% static 'shipment-static/CSS/shipment_style.css' %}">
 
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Shipping Docs Generator</title>
+<!-- 2. Load Preview Libraries (Required for DOCX rendering) -->
+<script src="https://unpkg.com/jszip/dist/jszip.min.js"></script>
+<script src="https://unpkg.com/docx-preview/dist/docx-preview.min.js"></script>
 
-  <script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.1/dist/pizzip.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.29.0/build/docxtemplater.js"></script>
-
-  <style>
-    /* --- ORIGINAL CSS UNTOUCHED --- */
-    body { font-family:'Segoe UI',Arial,sans-serif; background:#f4f6fb; margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;}
-    .container{background:#fff;border-radius:14px;box-shadow:0 4px 24px rgba(0,0,0,0.08);padding:28px 18px;max-width:900px;width:100%;margin:24px;}
-    h2{text-align:center;color:#2d3a4a;margin-bottom:10px;font-weight:600;}
-    h3{margin-top:18px;margin-bottom:6px;color:#4a5a6a;font-size:1.1em;font-weight:500;}
-    .template-selector{margin-bottom:20px;}
-    .template-selector select{width:100%;padding:10px;border:1px solid #d1d6e0;border-radius:6px;background:#f8fafc;font-size:1em;}
-    .preview-section{margin-top:20px;border-top:1px solid #e1e5eb;padding-top:20px;}
-    .preview-documents{max-height:300px;overflow-y:auto;}
-    .preview-item{padding:10px;border:1px solid #e1e5eb;border-radius:6px;margin-bottom:10px;cursor:pointer;}
-    .preview-item:hover{background:#f8fafc;}
-    form{display:grid;grid-template-columns:1fr;gap:10px;}
-    label{display:flex;flex-direction:column;font-size:0.98em;color:#3a4a5a;}
-    input,textarea,select{border:1px solid #d1d6e0;border-radius:6px;padding:8px 10px;margin-top:2px;background:#f8fafc;}
-    textarea{min-height:40px;max-height:60px;}
-    button{background:linear-gradient(90deg,#5b8def 0%,#3a7bd5 100%);color:#fff;border:none;border-radius:6px;padding:12px 0;font-size:1.08em;font-weight:600;cursor:pointer;margin-top:10px;width:100%;}
-    button.secondary{background:#6c757d;}
-  </style>
-</head>
-
-<body>
-
-  <div class="container">
-    <h2>Shipping Document Generator</h2>
-
-    <!-- TEMPLATE DROPDOWN -->
-    <div class="template-selector">
-      <label>Select Template:</label>
-      <select id="templateSelect" onchange="loadTemplateFields()">
-        <option value="">-- Select a Template --</option>
-      </select>
+<div class="container">
+    <div class="header">
+        <h1>📦 Shipment Generator</h1>
+        <p class="subtitle">Upload templates, configure keys, and generate documents.</p>
     </div>
 
-    <form id="docForm">
-    <div id="dynamicFields"></div>
+    <div class="main-layout">
+        <!-- SIDEBAR -->
+        <aside>
+            <div class="card">
+                <div class="section-title">Templates</div>
+                <button class="btn btn-primary btn-full" onclick="ui.openUploadModal()">
+                    <span>+</span> Upload New Template
+                </button>
+                <ul class="template-list" id="templateList" style="margin-top: 1rem;">
+                    <li class="text-center" style="color:var(--text-muted)">Loading...</li>
+                </ul>
+            </div>
+            
+            <div class="card">
+                <div class="section-title">Stats</div>
+                <div style="display: flex; justify-content: space-around; text-align: center;">
+                    <div>
+                        <div style="font-size: 1.5rem; font-weight: bold; color: var(--primary)" id="statTemplates">0</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted)">Templates</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
 
-    <button type="button" onclick="generateDocx()">Generate DOCX</button>
-    <button type="button" class="secondary" onclick="saveToBackend()">Save to Backend</button>
-    </form>
+        <!-- MAIN CONTENT -->
+        <main class="card" id="mainContent">
+            <!-- Empty State -->
+            <div id="emptyState" class="text-center" style="padding: 3rem;">
+                <div style="font-size: 3rem;">📄</div>
+                <h3>No Template Selected</h3>
+                <p style="color: var(--text-muted)">Select a template from the sidebar to begin.</p>
+            </div>
 
-    {% comment %} <!-- FORM -->
-    <form id="docForm">
-      <h3>Recipient Info</h3>
+            <!-- Workspace -->
+            <div id="workspace" class="hidden">
+                <!-- 1. Configuration Section -->
+                <div class="settings-panel">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                        <h3 class="section-title" style="margin:0; border:none;">Template Configuration</h3>
+                        <button class="btn btn-danger btn-sm" onclick="app.deleteTemplate()">Delete Template</button>
+                    </div>
+                    
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Template Name</label>
+                            <input type="text" id="configName" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Key Field (Identifier)</label>
+                            <select id="configKeyField" class="form-select">
+                                <option value="">-- Select a Key Field --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <button class="btn btn-secondary btn-sm" onclick="app.updateSettings()">Update Settings</button>
+                    </div>
+                </div>
 
-      <label>Recipient Name: <input id="R_NAME"></label>
-      <label>Address: <textarea id="R_ADDRESS"></textarea></label>
-      <label>City: <input id="R_CITY"></label>
-      <label>State: <input id="R_STATE"></label>
-      <label>ZIP: <input id="R_ZIP"></label>
-      <label>Country: <input id="R_COUNTRY"></label>
+                <!-- 2. Generation Form -->
+                <div style="margin-bottom: 2rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 class="section-title" style="margin:0;">Document Data</h3>
+                        <span id="editModeIndicator" class="hidden" style="background: var(--warning); color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">EDITING SAVED DOC</span>
+                    </div>
+                    
+                    <div id="dynamicForm" class="form-grid">
+                        <!-- Fields injected here -->
+                    </div>
+                     <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+                        <!-- Updated Buttons -->
+                        <button class="btn btn-primary" onclick="app.generatePreview()">👁️ Preview Generated</button>
+                        <button class="btn btn-secondary" onclick="app.saveToBackend()" id="btnSave">Save to Backend</button>
+                        <button class="btn btn-secondary" onclick="app.clearForm()">Clear Form</button>
+                    </div> 
+                </div>
 
-      <h3>Product Info</h3>
-
-      <label>Description: <textarea id="DESC"></textarea></label>
-      <label>Quantity: <input id="QTY"></label>
-      <label>Unit Weight: <input id="UNIT_WT"></label>
-      <label>Total Weight: <input id="TOTAL_WT"></label>
-      <label>Invoice No: <input id="INVOICE_NO"></label>
-      <label>Unit Price: <input id="UNIT_PRICE"></input></label>
-      <label>Total Price: <input id="TOTAL_PRICE"></label>
-      <label>Product Name: <input id="P_NAME"></label>
-      <label>AWB #: <input id="AWB"></label>
-
-      <button type="button" onclick="generateDocx()">Generate DOCX</button>
-      <button type="button" class="secondary" onclick="saveToBackend()">Save to Backend</button>
-    </form> {% endcomment %}
-
-    <div class="preview-section" id="previewSection" style="display:none;">
-      <h3>Previously Generated Documents</h3>
-      <div class="preview-documents" id="previewDocuments"></div>
+                <!-- 3. History -->
+                <div>
+                    <h3 class="section-title">History</h3>
+                    <ul id="historyList" style="list-style:none;"></ul>
+                </div>
+            </div>
+        </main>
     </div>
-  </div>
+</div>
 
-  <!-- ============================= -->
-  <!--    DJANGO BACKEND JS LOGIC    -->
-  <!-- ============================= -->
-  <script>
-    let currentTemplate = null;
+<!-- Upload Modal -->
+<div class="modal-overlay" id="uploadModal">
+    <div class="modal-card">
+        <h2 style="margin-bottom: 1rem;">Upload Template</h2>
+        <form id="uploadForm" onsubmit="app.handleUpload(event)">
+            <div class="form-group">
+                <label class="form-label">Name</label>
+                <input type="text" name="name" class="form-input" required placeholder="e.g. Invoice Template">
+            </div>
+            
+            <div class="dropzone" id="dropzone">
+                <p>Drag & Drop .docx file here</p>
+                <p style="font-size: 0.8rem; color: var(--text-muted);">or click to browse</p>
+                <input type="file" name="file" id="fileInput" accept=".docx" hidden required>
+                <div id="fileName" style="margin-top: 0.5rem; color: var(--primary); font-weight: 600;"></div>
+            </div>
 
-    // Replace loadTemplateFields() with this:
-    async function loadTemplateFields() {
-        const templateId = document.getElementById("templateSelect").value;
+            <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
+                <button type="button" class="btn btn-secondary" onclick="ui.closeModal('uploadModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Upload</button>
+            </div>
+        </form>
+    </div>
+</div>
 
-        if (!templateId) {
-            currentTemplate = null;
-            document.getElementById("previewSection").style.display = "none";
-            document.getElementById("dynamicFields").innerHTML = "";
-            return;
-        }
+<!-- Preview Modal (New) -->
+<div class="modal-overlay" id="previewModal">
+    <div class="modal-card" style="max-width: 900px; width: 95%; height: 90vh; display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h2>Document Preview</h2>
+            <button class="btn btn-secondary btn-sm" onclick="ui.closeModal('previewModal')">Close</button>
+        </div>
+        
+        <!-- Container for DOCX Rendering -->
+        <div id="previewContainer" class="preview-container">
+            Loading preview...
+        </div>
 
-        const res = await fetch(`/templates/${templateId}/preview_fields/`);
-        currentTemplate = await res.json();
+        <div style="margin-top: 1rem; text-align: right;">
+            <button class="btn btn-primary" onclick="app.downloadCurrentPreview()">⬇ Download This Document</button>
+        </div>
+    </div>
+</div>
 
-        renderDynamicForm(currentTemplate.fields);
-        await loadGeneratedDocuments(templateId);
+<div id="toast" class="toast"></div>
 
-        document.getElementById("previewSection").style.display = "block";
-    }
-
-    // NEW — Generates the form dynamically
-    function renderDynamicForm(fields) {
-        const container = document.getElementById("dynamicFields");
-        container.innerHTML = ""; 
-
-        fields.forEach(field => {
-            const label = document.createElement("label");
-            label.textContent = field + ":";
-
-            // Some fields should be textareas automatically
-            const LONG_FIELDS = ["ADDRESS", "DESC", "NOTES", "DETAILS"];
-            const key = field.toUpperCase();
-
-            let input;
-            if (LONG_FIELDS.some(f => key.includes(f))) {
-                input = document.createElement("textarea");
-            } else {
-                input = document.createElement("input");
-                input.type = "text";
-            }
-
-            input.id = field;
-            label.appendChild(input);
-
-            container.appendChild(label);
-        });
-    }
-
-    // NEW — build formData dynamically
-    function getFormData() {
-        const data = {};
-        currentTemplate.fields.forEach(field => {
-            const el = document.getElementById(field);
-            data[field] = el ? el.value : "";
-        });
-        return data;
-    }
-  </script>
-
-
-</body>
-</html>
+<!-- 3. Load JS -->
+<script src="{% static 'shipment-static/JS/shipment_script.js' %}"></script>
 
 {% endblock %}
-
-
-{% comment %} <!DOCTYPE html>
-<html>
-<head>
-  <title>Shipping Docs Generator</title>
-  <script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.1/dist/pizzip.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.29.0/build/docxtemplater.js"></script>
-  <style>
-    /* YOUR STYLES — UNCHANGED */
-    body {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      background: #f4f6fb;
-      margin: 0;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .container {
-      background: #fff;
-      border-radius: 14px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-      padding: 28px 18px;
-      max-width: 900px;
-      width: 100%;
-      margin: 24px;
-    }
-    h2 { text-align: center; color: #2d3a4a; margin-bottom: 10px; font-weight: 600; }
-    h3 { margin-top: 18px; margin-bottom: 6px; color: #4a5a6a; font-size: 1.1em; font-weight: 500; }
-    .template-selector { margin-bottom: 20px; }
-    .template-selector select {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #d1d6e0;
-      border-radius: 6px;
-      background: #f8fafc;
-      font-size: 1em;
-    }
-    .preview-section { margin-top: 20px; border-top: 1px solid #e1e5eb; padding-top: 20px; }
-    .preview-documents { max-height: 300px; overflow-y: auto; }
-    .preview-item {
-      padding: 10px;
-      border: 1px solid #e1e5eb;
-      border-radius: 6px;
-      margin-bottom: 10px;
-      cursor: pointer;
-    }
-    .preview-item:hover { background: #f8fafc; }
-    form { display: grid; grid-template-columns: 1fr; gap: 10px; }
-    label { display: flex; flex-direction: column; font-size: 0.98em; color: #3a4a5a; }
-    input, textarea, select {
-      border: 1px solid #d1d6e0;
-      border-radius: 6px;
-      padding: 8px 10px;
-      margin-top: 2px;
-      background: #f8fafc;
-    }
-    textarea { min-height: 40px; max-height: 60px; }
-    button {
-      background: linear-gradient(90deg,#5b8def 0%,#3a7bd5 100%);
-      color: #fff; border: none; border-radius: 6px;
-      padding: 12px 0; font-size: 1.08em; font-weight: 600;
-      cursor: pointer; margin-top: 10px;
-      width: 100%;
-    }
-    button.secondary { background: #6c757d; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h2>Shipping Document Generator</h2>
-    
-    <div class="template-selector">
-      <label for="templateSelect">Select Template:</label>
-      <select id="templateSelect" onchange="loadTemplateFields()">
-        <option value="">-- Select a Template --</option>
-      </select>
-    </div>
-
-    <form id="docForm">
-      <h3>Recipient Info</h3>
-
-      <label for="R_NAME">Recipient Name: <input type="text" id="R_NAME"></label>
-      <label for="R_ADDRESS">Address: <textarea id="R_ADDRESS"></textarea></label>
-      <label for="R_CITY">City: <input type="text" id="R_CITY"></label>
-      <label for="R_STATE">State: <input type="text" id="R_STATE"></label>
-      <label for="R_ZIP">ZIP: <input type="text" id="R_ZIP"></label>
-      <label for="R_COUNTRY">Country: <input type="text" id="R_COUNTRY"></label>
-
-      <h3>Product Info</h3>
-
-      <label for="DESC">Description: <textarea id="DESC"></textarea></label>
-      <label for="QTY">Quantity: <input type="text" id="QTY"></label>
-      <label for="UNIT_WT">Unit Weight: <input type="text" id="UNIT_WT"></label>
-      <label for="TOTAL_WT">Total Weight: <input type="text" id="TOTAL_WT"></label>
-      <label for="INVOICE_NO">Invoice No: <input type="text" id="INVOICE_NO"></label>
-      <label for="UNIT_PRICE">Unit Price: <input type="text" id="UNIT_PRICE"></label>
-      <label for="TOTAL_PRICE">Total Price: <input type="text" id="TOTAL_PRICE"></label>
-      <label for="P_NAME">Product Name: <input type="text" id="P_NAME"></label>
-      <label for="AWB">AWB #: <input type="text" id="AWB"></label>
-      
-      <button type="button" onclick="generateDocx()">Generate DOCX</button>
-      <button type="button" class="secondary" onclick="saveToBackend()">Save to Backend</button>
-    </form>
-
-    <div class="preview-section" id="previewSection" style="display: none;">
-      <h3>Previously Generated Documents</h3>
-      <div class="preview-documents" id="previewDocuments"></div>
-    </div>
-  </div>
-
-  <script>
-    let currentTemplate = null;
-    let templates = [];
-
-    // Load templates on page load
-    document.addEventListener('DOMContentLoaded', loadTemplates);
-
-    async function loadTemplates() {
-      try {
-        const response = await fetch('/api/templates/');
-        templates = await response.json();
-        const select = document.getElementById('templateSelect');
-        
-        templates.forEach(template => {
-          const option = document.createElement('option');
-          option.value = template.id;
-          option.textContent = template.name;
-          select.appendChild(option);
-        });
-      } catch (error) {
-        console.error('Error loading templates:', error);
-      }
-    }
-
-    async function loadTemplateFields() {
-      const templateId = document.getElementById('templateSelect').value;
-      if (!templateId) {
-        currentTemplate = null;
-        document.getElementById('previewSection').style.display = 'none';
-        return;
-      }
-
-      try {
-        const response = await fetch(`/api/templates/${templateId}/preview_fields/`);
-        currentTemplate = await response.json();
-        
-        await loadGeneratedDocuments(templateId);
-        document.getElementById('previewSection').style.display = 'block';
-      } catch (error) {
-        console.error('Error loading template fields:', error);
-      }
-    }
-
-    async function loadGeneratedDocuments(templateId) {
-      try {
-        const response = await fetch(`/api/docs/?template=${templateId}`);
-        const documents = await response.json();
-        const container = document.getElementById('previewDocuments');
-        
-        container.innerHTML = '';
-        documents.forEach(doc => {
-          const item = document.createElement('div');
-          item.className = 'preview-item';
-          item.innerHTML = `
-            <strong>${doc.document_name}</strong>
-            <br>Created: ${new Date(doc.created_at).toLocaleDateString()}
-            <br>Key: ${doc.key_field_value || 'N/A'}
-            ${doc.download_url ? `<br><a href="${doc.download_url}" target="_blank">Download</a>` : ''}
-          `;
-          container.appendChild(item);
-        });
-      } catch (error) {
-        console.error('Error loading generated documents:', error);
-      }
-    }
-
-    function formatDate(date) {
-      return date.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
-    }
-
-    function getFormData() {
-      const today = new Date();
-      const formattedDate = formatDate(today);
-
-      return {
-        R_NAME: R_NAME.value,
-        R_ADDRESS: R_ADDRESS.value,
-        R_CITY: R_CITY.value,
-        R_STATE: R_STATE.value,
-        R_ZIP: R_ZIP.value,
-        R_COUNTRY: R_COUNTRY.value,
-        DATE: formattedDate,
-        DESC: DESC.value,
-        QTY: QTY.value,
-        UNIT_WT: UNIT_WT.value,
-        TOTAL_WT: TOTAL_WT.value,
-        INVOICE_NO: INVOICE_NO.value,
-        UNIT_PRICE: UNIT_PRICE.value,
-        TOTAL_PRICE: TOTAL_PRICE.value,
-        P_NAME: P_NAME.value,
-        AWB: AWB.value
-      };
-    }
-
-    async function generateDocx() {
-      if (!currentTemplate) return alert('Please select a template first');
-
-      const data = getFormData();
-      
-      try {
-        const response = await fetch(`/api/templates/${currentTemplate.id}/generate/`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
-          body: JSON.stringify({
-            document_name: `Shipping_Doc_${new Date().toISOString().slice(0,10)}`,
-            field_values: data
-          })
-        });
-
-        if (!response.ok) return alert('Error generating document');
-
-        const result = await response.json();
-        if (result.download_url) window.open(result.download_url, '_blank');
-
-        await loadGeneratedDocuments(currentTemplate.id);
-        alert('Document generated successfully!');
-      } catch (error) {
-        console.error('Error:', error);
-      }
-    }
-
-    async function saveToBackend() {
-      if (!currentTemplate) return alert('Please select a template first');
-
-      const data = getFormData();
-      
-      try {
-        const response = await fetch(`/api/templates/${currentTemplate.id}/generate/`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
-          body: JSON.stringify({
-            document_name: `Shipping_Doc_${new Date().toISOString().slice(0,10)}`,
-            field_values: data
-          })
-        });
-
-        if (!response.ok) return alert('Error saving document');
-
-        await loadGeneratedDocuments(currentTemplate.id);
-        alert('Document saved to backend successfully!');
-      } catch (error) {
-        console.error('Error:', error);
-      }
-    }
-
-    // CSRF helper
-    function getCsrfToken() {
-      const name = 'csrftoken=';
-      return document.cookie
-        .split(';')
-        .map(c => c.trim())
-        .find(c => c.startsWith(name))
-        ?.substring(name.length);
-    }
-  </script>
-</body>
-</html> {% endcomment %}

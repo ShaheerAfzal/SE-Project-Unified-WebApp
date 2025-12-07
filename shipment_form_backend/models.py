@@ -1,11 +1,12 @@
 # models.py
 import re
 from io import BytesIO
-import uuid
+# import uuid
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
 from django.core.files.base import ContentFile
+from django.http import FileResponse
 
 
 # Optional: if you use docxtpl for templating
@@ -19,47 +20,54 @@ except Exception:
 # Create your models here.
 
 # helper: extract placeholders in two common formats:
-# [FIELD_NAME] and {{FIELD_NAME}}  (keeps the raw key names)
 def extract_placeholders_from_docx(path_or_file):
     """
-    Accepts a file path or a file-like object for a .docx file.
-    Returns a sorted list of unique placeholder keys (strings).
-    Supports [KEY], {{KEY}} and other bracketed forms.
+    Extract placeholders from a .docx file.
+    Supports:
+        [KEY]
+        {{KEY}}
+        {KEY}
+    Returns a cleaned, normalized list of keys.
     """
-    # Use python-docx to read document text (safe minimal dependency)
-    # pip install python-docx
+    import re
     from docx import Document
 
-    # Load document
+    # Load document from either file path or file object
     if hasattr(path_or_file, "read"):
         doc = Document(path_or_file)
     else:
         doc = Document(path_or_file)
 
-    text = []
+    # Collect text
+    text_blocks = []
     for p in doc.paragraphs:
-        text.append(p.text)
+        text_blocks.append(p.text)
     for table in doc.tables:
         for row in table.rows:
             for cell in row.cells:
-                text.append(cell.text)
-    joined = "\n".join(text)
+                text_blocks.append(cell.text)
+
+    joined = "\n".join(text_blocks)
 
     keys = set()
 
-    # patterns: [KEY], {{KEY}}, allow spaces inside then strip
+    # --- Extract [KEY] ---
     for m in re.findall(r"\[([^\]]+)\]", joined):
         keys.add(m.strip())
-    for m in re.findall(r"\{\{([^}]+)\}\}", joined):
+
+    # --- Extract {{KEY}} ---
+    for m in re.findall(r"\{\{([^{}]+)\}\}", joined):
         keys.add(m.strip())
 
-    # normalize keys to uppercase and replace spaces with underscores (optional)
+    # --- Extract {KEY} (your format) ---
+    # Make sure NOT to capture {{KEY}} again.
+    for m in re.findall(r"(?<!\{)\{([^{}]+)\}(?!\})", joined):
+        keys.add(m.strip())
+
+    # Normalize keys: Replace spaces → underscores, title-case optional
     normalized = []
     for k in keys:
-        nk = k.strip()
-        # keep original if already looks like a safe key (letters, digits, underscore)
-        # else convert spaces -> underscore
-        nk = re.sub(r"\s+", "_", nk)
+        nk = re.sub(r"\s+", "_", k.strip())
         normalized.append(nk)
 
     return sorted(set(normalized))
@@ -72,7 +80,7 @@ class DocumentTemplate(models.Model):
       Example: {"PRODUCT_NAME": "Product Name", "QUANTITY": "Quantity"}
     key_field is one of the placeholder keys used as the primary identifier for documents.
     """
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     name = models.CharField(max_length=255)
     file = models.FileField(upload_to="doc_templates/")
@@ -113,57 +121,50 @@ class DocumentTemplate(models.Model):
         self.save(update_fields=["fields", "key_field", "updated_at"])
 
     def generate_filled_docx_bytes(self, field_values: dict):
-        """
-        Generate a .docx bytes object by replacing placeholders with field_values.
-        This uses docxtpl if available, otherwise a simple python-docx replace.
-        Returns a BytesIO containing the generated .docx file.
-        """
-        if DOCXTPL_AVAILABLE:
-            # docxtpl supports Jinja-like placeholders; ensure template uses {{ KEY }} style
-            tpl = DocxTemplate(self.file.path if hasattr(self.file, "path") else self.file)
-            # docxtpl expects keys as simple mapping
-            ctx = {k: field_values.get(k, "") for k in self.fields.keys()}
-            tpl.render(ctx)
-            out = BytesIO()
-            tpl.save(out)
-            out.seek(0)
-            return out
+        from docx import Document
+        
+        # 1. Open the file safely
+        if hasattr(self.file, "path"):
+            doc = Document(self.file.path)
         else:
-            # Fallback: naive replace in paragraphs and table cells using python-docx
-            from docx import Document
-            if hasattr(self.file, "path"):
-                doc = Document(self.file.path)
-            else:
-                # file-like object: need to re-open
-                doc = Document(self.file)
+            self.file.open()
+            doc = Document(self.file)
+            self.file.seek(0) 
 
-            def replace_in_paragraphs(paragraphs):
-                for p in paragraphs:
-                    inline = p.runs
-                    if not inline:
-                        continue
-                    fulltext = "".join([r.text for r in inline])
-                    newtext = fulltext
-                    for key in self.fields.keys():
-                        # support replacement in both formats
-                        newtext = newtext.replace(f"[{key}]", str(field_values.get(key, "")))
-                        newtext = newtext.replace(f"{{{{{key}}}}}", str(field_values.get(key, "")))
-                    if newtext != fulltext:
-                        # replace whole run set with one run to avoid run fragmentation handling complexities
-                        for i in range(len(inline)-1, -1, -1):
-                            p.runs[i].text = ""
-                        p.add_run(newtext)
+        # 2. Recursive function to replace text everywhere (paragraphs, tables, etc.)
+        def replace_in_element(element, data):
+            # Handle Paragraphs
+            if hasattr(element, 'paragraphs'):
+                for p in element.paragraphs:
+                    # Optimization: Only process if it looks like a placeholder
+                    if '{' in p.text or '[' in p.text:
+                        for key, val in data.items():
+                            val_str = str(val)
+                            # Handle [KEY]
+                            if f"[{key}]" in p.text:
+                                p.text = p.text.replace(f"[{key}]", val_str)
+                            # Handle {{KEY}}
+                            if f"{{{{{key}}}}}" in p.text:
+                                p.text = p.text.replace(f"{{{{{key}}}}}", val_str)
+                            # Handle {KEY}
+                            if f"{{{key}}}" in p.text:
+                                p.text = p.text.replace(f"{{{key}}}", val_str)
 
-            replace_in_paragraphs(doc.paragraphs)
-            for table in doc.tables:
-                for row in table.rows:
-                    for cell in row.cells:
-                        replace_in_paragraphs(cell.paragraphs)
+            # Handle Tables (Recursive)
+            if hasattr(element, 'tables'):
+                for table in element.tables:
+                    for row in table.rows:
+                        for cell in row.cells:
+                            replace_in_element(cell, data)
 
-            out = BytesIO()
-            doc.save(out)
-            out.seek(0)
-            return out
+        # 3. Run replacement
+        replace_in_element(doc, field_values)
+
+        # 4. Save to memory
+        out = BytesIO()
+        doc.save(out)
+        out.seek(0)
+        return out
 
 
 class GeneratedDocument(models.Model):
@@ -172,7 +173,7 @@ class GeneratedDocument(models.Model):
     field_values: the data used to fill the template so the doc can be regenerated.
     If you want to store the generated binary file, you can add an optional FileField.
     """
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
     template = models.ForeignKey(DocumentTemplate, on_delete=models.CASCADE, related_name="documents")
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
@@ -196,3 +197,9 @@ class GeneratedDocument(models.Model):
         # self.file.save(filename, ContentFile(out.read()), save=True)
         out.seek(0)
         return out
+    def save(self, *args, **kwargs):
+        # Automatically set key_field_value if it's missing
+        if not self.key_field_value and self.template and self.template.key_field:
+            self.key_field_value = self.field_values.get(self.template.key_field)
+            
+        super().save(*args, **kwargs)

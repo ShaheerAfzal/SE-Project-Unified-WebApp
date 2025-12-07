@@ -18,7 +18,7 @@ class DocumentTemplateUploadSerializer(serializers.ModelSerializer):
     'file' is required. fields + key_field are assigned after extract().
     """
     id = serializers.UUIDField(read_only=True)
-    file = serializers.FileField(write_only=True)
+    file = serializers.FileField(write_only=True, required=True)
 
     class Meta:
         model = DocumentTemplate
@@ -30,6 +30,7 @@ class DocumentTemplateUploadSerializer(serializers.ModelSerializer):
 class GeneratedDocumentSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(read_only=True)
     template = serializers.PrimaryKeyRelatedField(queryset=DocumentTemplate.objects.all())
+
     created_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:
@@ -48,6 +49,7 @@ class GeneratedDocumentSerializer(serializers.ModelSerializer):
         """
         Ensures that template.key_field exists inside field_values.
         """
+        
         template = data.get('template')
         field_values = data.get('field_values') or {}
 
@@ -63,9 +65,11 @@ class GeneratedDocumentSerializer(serializers.ModelSerializer):
         """
         Automatically derive key_field_value and create document entry.
         """
+        request = self.context.get('request')
+        user = request.user if (request and request.user.is_authenticated) else None
         template = validated_data['template']
         field_values = validated_data['field_values']
-        user = validated_data.get('created_by')
+        # user = validated_data.get('created_by')
 
         # derive key field automatically
         key_value = None
@@ -78,3 +82,28 @@ class GeneratedDocumentSerializer(serializers.ModelSerializer):
             field_values=field_values,
             key_field_value=str(key_value) if key_value else None
         )
+
+
+class DocumentTemplateUpdateSerializer(serializers.ModelSerializer):
+    # File is OPTIONAL here, so you can edit metadata without re-uploading
+    file = serializers.FileField(required=False, write_only=True)
+
+    class Meta:
+        model = DocumentTemplate
+        fields = ['id', 'name', 'file', 'key_field']
+        read_only_fields = ['id']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Add the Dynamic Dropdown logic for the "Update" view
+        if self.instance:
+            # Get keys from the JSON field
+            extracted_keys = self.instance.fields.keys()
+            field_choices = [(k, k) for k in extracted_keys]
+            
+            # Set key_field to be a Dropdown (ChoiceField) instead of Text
+            self.fields['key_field'] = serializers.ChoiceField(
+                choices=field_choices, 
+                required=False
+            )
