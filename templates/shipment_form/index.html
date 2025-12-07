@@ -4,12 +4,8 @@
 {% block title %}Shipment Form Generator{% endblock %}
 
 {% block content %}
-<!-- 1. Load CSS -->
+<!-- UPDATED: Pointing to shipment-static/CSS/shipment_style.css -->
 <link rel="stylesheet" href="{% static 'shipment-static/CSS/shipment_style.css' %}">
-
-<!-- 2. Load Preview Libraries (Required for DOCX rendering) -->
-<script src="https://unpkg.com/jszip/dist/jszip.min.js"></script>
-<script src="https://unpkg.com/docx-preview/dist/docx-preview.min.js"></script>
 
 <div class="container">
     <div class="header">
@@ -78,20 +74,14 @@
 
                 <!-- 2. Generation Form -->
                 <div style="margin-bottom: 2rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                        <h3 class="section-title" style="margin:0;">Document Data</h3>
-                        <span id="editModeIndicator" class="hidden" style="background: var(--warning); color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">EDITING SAVED DOC</span>
-                    </div>
-                    
+                    <h3 class="section-title">Generate Document</h3>
                     <div id="dynamicForm" class="form-grid">
                         <!-- Fields injected here -->
                     </div>
-                     <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
-                        <!-- Updated Buttons -->
-                        <button class="btn btn-primary" onclick="app.generatePreview()">👁️ Preview Generated</button>
-                        <button class="btn btn-secondary" onclick="app.saveToBackend()" id="btnSave">Save to Backend</button>
-                        <button class="btn btn-secondary" onclick="app.clearForm()">Clear Form</button>
-                    </div> 
+                    <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+                        <button class="btn btn-primary" onclick="app.generateDocument()">Generate & Download</button>
+                        <button class="btn btn-secondary" onclick="app.saveToBackend()">Save to Backend</button>
+                    </div>
                 </div>
 
                 <!-- 3. History -->
@@ -122,35 +112,16 @@
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
-                <button type="button" class="btn btn-secondary" onclick="ui.closeModal('uploadModal')">Cancel</button>
+                <button type="button" class="btn btn-secondary" onclick="ui.closeModal()">Cancel</button>
                 <button type="submit" class="btn btn-primary">Upload</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Preview Modal (New) -->
-<div class="modal-overlay" id="previewModal">
-    <div class="modal-card" style="max-width: 900px; width: 95%; height: 90vh; display: flex; flex-direction: column;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-            <h2>Document Preview</h2>
-            <button class="btn btn-secondary btn-sm" onclick="ui.closeModal('previewModal')">Close</button>
-        </div>
-        
-        <!-- Container for DOCX Rendering -->
-        <div id="previewContainer" class="preview-container">
-            Loading preview...
-        </div>
-
-        <div style="margin-top: 1rem; text-align: right;">
-            <button class="btn btn-primary" onclick="app.downloadCurrentPreview()">⬇ Download This Document</button>
-        </div>
-    </div>
-</div>
-
 <div id="toast" class="toast"></div>
 
-<!-- 3. Load JS -->
+<!-- UPDATED: Pointing to shipment-static/JS/shipment_script.js -->
 <script src="{% static 'shipment-static/JS/shipment_script.js' %}"></script>
 
 {% endblock %}
