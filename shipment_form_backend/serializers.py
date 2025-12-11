@@ -1,10 +1,10 @@
-# serializers.py
 from rest_framework import serializers
 from .models import DocumentTemplate, GeneratedDocument
 from django.core.exceptions import ValidationError
 
 class DocumentTemplateSerializer(serializers.ModelSerializer):
-    id = serializers.UUIDField(read_only=True)
+    # FIXED: Changed UUIDField to IntegerField to match your new model
+    id = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = DocumentTemplate
@@ -17,7 +17,8 @@ class DocumentTemplateUploadSerializer(serializers.ModelSerializer):
     Used only for uploading templates.
     'file' is required. fields + key_field are assigned after extract().
     """
-    id = serializers.UUIDField(read_only=True)
+    # FIXED: Changed UUIDField to IntegerField
+    id = serializers.IntegerField(read_only=True)
     file = serializers.FileField(write_only=True, required=True)
 
     class Meta:
@@ -27,55 +28,45 @@ class DocumentTemplateUploadSerializer(serializers.ModelSerializer):
     def validate_key_field(self, value):
         # Frontend can optionally choose key_field, but validation happens later.
         return value
+
+
 class GeneratedDocumentSerializer(serializers.ModelSerializer):
-    id = serializers.UUIDField(read_only=True)
+    # FIXED: Changed UUIDField to IntegerField
+    id = serializers.IntegerField(read_only=True)
     template = serializers.PrimaryKeyRelatedField(queryset=DocumentTemplate.objects.all())
 
-    created_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
-
+    # We remove HiddenField(CurrentUserDefault) because it crashes with AnonymousUser.
+    # We will handle the user assignment manually in the create() method.
+    
     class Meta:
         model = GeneratedDocument
         fields = [
             'id',
             'template',
-            'created_by',
             'created_at',
             'field_values',
             'key_field_value',
+            'created_by' 
         ]
-        read_only_fields = ['created_at', 'key_field_value', 'created_by']
-
-    def validate(self, data):
-        """
-        Ensures that template.key_field exists inside field_values.
-        """
-        
-        template = data.get('template')
-        field_values = data.get('field_values') or {}
-
-        if template and template.key_field:
-            if template.key_field not in field_values:
-                raise serializers.ValidationError({
-                    'field_values': f"Missing required key_field '{template.key_field}'"
-                })
-
-        return data
+        read_only_fields = ['id', 'created_at', 'key_field_value', 'created_by']
 
     def create(self, validated_data):
-        """
-        Automatically derive key_field_value and create document entry.
-        """
+        # 1. Safely get the user
         request = self.context.get('request')
-        user = request.user if (request and request.user.is_authenticated) else None
+        user = None
+        if request and hasattr(request, 'user') and request.user.is_authenticated:
+            user = request.user
+
+        # 2. Get data
         template = validated_data['template']
         field_values = validated_data['field_values']
-        # user = validated_data.get('created_by')
 
-        # derive key field automatically
+        # 3. Derive key field automatically
         key_value = None
         if template.key_field:
             key_value = field_values.get(template.key_field)
 
+        # 4. Create
         return GeneratedDocument.objects.create(
             template=template,
             created_by=user,
@@ -87,6 +78,8 @@ class GeneratedDocumentSerializer(serializers.ModelSerializer):
 class DocumentTemplateUpdateSerializer(serializers.ModelSerializer):
     # File is OPTIONAL here, so you can edit metadata without re-uploading
     file = serializers.FileField(required=False, write_only=True)
+    # FIXED: Changed UUIDField to IntegerField
+    id = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = DocumentTemplate

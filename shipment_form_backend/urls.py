@@ -12,7 +12,6 @@ router.register(r'templates', DocumentTemplateViewSet, basename='document-templa
 router.register(r'documents', GeneratedDocumentViewSet, basename='generated-documents')
 
 urlpatterns = [
-    # path('', api_overview, name='api-overview'),
     path('', include(router.urls)),
     path("shipment/", shipment_index, name="shipment_home"),
 ]

@@ -4,6 +4,172 @@
 {% block title %}Shipment Form Generator{% endblock %}
 
 {% block content %}
+<!-- 1. Load CSS -->
+<link rel="stylesheet" href="{% static 'shipment-static/CSS/shipment_style.css' %}">
+
+<!-- 2. Load Preview Libraries (Required for DOCX rendering) -->
+<script src="https://unpkg.com/jszip/dist/jszip.min.js"></script>
+<script src="https://unpkg.com/docx-preview/dist/docx-preview.min.js"></script>
+
+<style>
+    /* Add this specifically for the active state highlighting */
+    .document-item.active {
+        background-color: #eff6ff; /* Light blue background */
+        border-color: #2563eb;     /* Blue border */
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    }
+</style>
+
+<div class="container">
+    <div class="header">
+        <h1>📦 Shipment Generator</h1>
+        <p class="subtitle">Upload templates, configure keys, and generate documents.</p>
+    </div>
+
+    <div class="main-layout">
+        <!-- SIDEBAR -->
+        <aside>
+            <div class="card">
+                <div class="section-title">Templates</div>
+                <button class="btn btn-primary btn-full" onclick="ui.openUploadModal()">
+                    <span>+</span> Upload New Template
+                </button>
+                <ul class="template-list" id="templateList" style="margin-top: 1rem;">
+                    <li class="text-center" style="color:var(--text-muted)">Loading...</li>
+                </ul>
+            </div>
+            
+            <div class="card">
+                <div class="section-title">Stats</div>
+                <div style="display: flex; justify-content: space-around; text-align: center;">
+                    <div>
+                        <div style="font-size: 1.5rem; font-weight: bold; color: var(--primary)" id="statTemplates">0</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted)">Templates</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="card" id="mainContent">
+            <!-- Empty State -->
+            <div id="emptyState" class="text-center" style="padding: 3rem;">
+                <div style="font-size: 3rem;">📄</div>
+                <h3>No Template Selected</h3>
+                <p style="color: var(--text-muted)">Select a template from the sidebar to begin.</p>
+            </div>
+
+            <!-- Workspace -->
+            <div id="workspace" class="hidden">
+                <!-- 1. Configuration Section -->
+                <div class="settings-panel">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                        <h3 class="section-title" style="margin:0; border:none;">Template Configuration</h3>
+                        <button class="btn btn-danger btn-sm" onclick="app.deleteTemplate()">Delete Template</button>
+                    </div>
+                    
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Template Name</label>
+                            <input type="text" id="configName" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Key Field (Identifier)</label>
+                            <select id="configKeyField" class="form-select">
+                                <option value="">-- Select a Key Field --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <button class="btn btn-secondary btn-sm" onclick="app.updateSettings()">Update Settings</button>
+                    </div>
+                </div>
+
+                <!-- 2. Generation Form -->
+                <div style="margin-bottom: 2rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 class="section-title" style="margin:0;">Document Data</h3>
+                        <span id="editModeIndicator" class="hidden" style="background: #f59e0b; color: #fff; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight:bold;">EDITING SAVED DOC</span>
+                    </div>
+                    
+                    <div id="dynamicForm" class="form-grid">
+                        <!-- Fields injected here -->
+                    </div>
+                    <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+                        <!-- Updated Buttons -->
+                        <button class="btn btn-primary" onclick="app.generatePreview()">Generate & Preview</button>
+                        <button class="btn btn-secondary" onclick="app.saveToBackend()" id="btnSave">Save to Backend</button>
+                        <button class="btn btn-secondary" onclick="app.clearForm()">Clear Form</button>
+                    </div>
+                </div>
+
+                <!-- 3. History -->
+                <div>
+                    <h3 class="section-title">History</h3>
+                    <ul id="historyList" style="list-style:none;"></ul>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal-overlay" id="uploadModal">
+    <div class="modal-card">
+        <h2 style="margin-bottom: 1rem;">Upload Template</h2>
+        <form id="uploadForm" onsubmit="app.handleUpload(event)">
+            <div class="form-group">
+                <label class="form-label">Name</label>
+                <input type="text" name="name" class="form-input" required placeholder="e.g. Invoice Template">
+            </div>
+            
+            <div class="dropzone" id="dropzone">
+                <p>Drag & Drop .docx file here</p>
+                <p style="font-size: 0.8rem; color: var(--text-muted);">or click to browse</p>
+                <input type="file" name="file" id="fileInput" accept=".docx" hidden required>
+                <div id="fileName" style="margin-top: 0.5rem; color: var(--primary); font-weight: 600;"></div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
+                <button type="button" class="btn btn-secondary" onclick="ui.closeModal('uploadModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Upload</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Preview Modal (New) -->
+<div class="modal-overlay" id="previewModal">
+    <div class="modal-card" style="max-width: 900px; width: 95%; height: 90vh; display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h2>Document Preview</h2>
+            <button class="btn btn-secondary btn-sm" onclick="ui.closeModal('previewModal')">Close</button>
+        </div>
+        
+        <!-- Container for DOCX Rendering -->
+        <div id="previewContainer" class="preview-container" style="flex: 1; overflow-y: auto; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem;">
+            Loading preview...
+        </div>
+
+        <div style="margin-top: 1rem; text-align: right;">
+            <button class="btn btn-primary" onclick="app.downloadCurrentPreview()">⬇ Download This Document</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<!-- 3. Load JS -->
+<script src="{% static 'shipment-static/JS/shipment_script.js' %}"></script>
+
+{% endblock %}
+
+{% comment %} {% extends "navbar/base.html" %}
+{% load static %}
+
+{% block title %}Shipment Form Generator{% endblock %}
+
+{% block content %}
 <!-- UPDATED: Pointing to shipment-static/CSS/shipment_style.css -->
 <link rel="stylesheet" href="{% static 'shipment-static/CSS/shipment_style.css' %}">
 
@@ -124,4 +290,4 @@
 <!-- UPDATED: Pointing to shipment-static/JS/shipment_script.js -->
 <script src="{% static 'shipment-static/JS/shipment_script.js' %}"></script>
 
-{% endblock %}
+{% endblock %} {% endcomment %}
