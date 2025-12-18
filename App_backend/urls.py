@@ -24,4 +24,5 @@ urlpatterns = [
 
     path('api/hls/', include('HLS_viewer_backend.urls')),
     path('api/shipment_forms/', include('shipment_form_backend.urls')),
+    path('api/htv_tools/', include('htv_tools_backend.urls')),
 ]

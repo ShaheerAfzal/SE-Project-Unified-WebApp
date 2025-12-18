@@ -1,0 +1,112 @@
+{% extends "navbar/base.html" %}
+{% load static %}
+
+{% block title %}HTV Tracker Config{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'htv-tools-static/htv-config/CSS/style.css' %}" />
+
+<div class="bg-gray-100 p-4">
+    <nav class="bg-gray-200 p-4 mb-4 flex justify-between items-center rounded shadow-sm">
+        <h1 class="text-2xl font-bold">HTV TRACKER CONFIG</h1>
+        <div class="led-indicators flex gap-4">
+            <div class="led-item flex items-center gap-2">
+                <div class="signal-indicator">
+                    <div class="signal-bars flex items-end gap-1">
+                        <div class="bar bar-1 inactive bg-gray-400 w-1 h-2"></div>
+                        <div class="bar bar-2 inactive bg-gray-400 w-1 h-3"></div>
+                        <div class="bar bar-3 inactive bg-gray-400 w-1 h-4"></div>
+                        <div class="bar bar-4 inactive bg-gray-400 w-1 h-5"></div>
+                    </div>
+                    <div class="signal-unknown text-xs text-center">?</div>
+                </div>
+                <span class="text-sm">Signal Strength</span>
+            </div>
+            <div class="led-item flex items-center gap-2">
+                <div class="led led-off w-3 h-3 rounded-full bg-gray-500" id="sim-indicator"></div>
+                <span class="text-sm">Sim Inserted</span>
+            </div>
+            <div class="led-item flex items-center gap-2">
+                <div class="led led-off w-3 h-3 rounded-full bg-gray-500" id="gprs-indicator"></div>
+                <span class="text-sm">GPRS Connected</span>
+            </div>
+            <div class="led-item flex items-center gap-2">
+                <div class="led led-off w-3 h-3 rounded-full bg-gray-500" id="server-indicator"></div>
+                <span class="text-sm">Server Connected</span>
+            </div>
+            <div class="led-item flex items-center gap-2">
+                <div class="led led-off w-3 h-3 rounded-full bg-gray-500" id="gps-indicator"></div>
+                <span class="text-sm">GPS Ready</span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="flex flex-col lg:flex-row justify-between gap-4">
+        <div id="config-card" class="flex flex-col bg-white rounded p-6 shadow-md w-full lg:w-1/2">
+            <div class="flex justify-between items-center w-full mb-6">
+                <h2 class="text-xl font-bold">Set Configs</h2>
+                <div class="flex flex-wrap gap-2 justify-end">
+                    <button id="showCanBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded text-sm">Show CAN</button>
+                    <button id="hideCanBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded text-sm">Hide CAN</button>
+                    <button id="showBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded text-sm">SHOW</button>
+                    <button id="hideBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded text-sm">HIDE</button>
+                    <button id="connectBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm">Connect</button>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div class="flex items-center">
+                    <label for="ImeiInput" class="w-1/4 text-sm font-medium">IMEI:</label>
+                    <input type="text" id="ImeiInput" class="flex-grow border border-gray-300 rounded px-3 py-2 bg-gray-50" readonly />
+                </div>
+                <div class="flex items-center">
+                    <label for="apnInput" class="w-1/4 text-sm font-medium">APN Name:</label>
+                    <input type="text" id="apnInput" class="flex-grow border border-gray-300 rounded px-3 py-2" />
+                </div>
+                <div class="flex items-center">
+                    <label for="ipInput" class="w-1/4 text-sm font-medium">IP Address:</label>
+                    <input type="text" id="ipInput" class="flex-grow border border-gray-300 rounded px-3 py-2" />
+                </div>
+                <div class="flex items-center">
+                    <label for="portInput" class="w-1/4 text-sm font-medium">Port:</label>
+                    <input type="number" id="portInput" class="flex-grow border border-gray-300 rounded px-3 py-2" />
+                </div>
+                <div class="flex items-center">
+                    <label for="updateRateInput" class="w-1/4 text-sm font-medium">Update Rate:</label>
+                    <input type="number" id="updateRateInput" class="flex-grow border border-gray-300 rounded px-3 py-2" />
+                </div>
+                <div class="flex items-center">
+                    <label for="canTypeInput" class="w-1/4 text-sm font-medium">CAN Type:</label>
+                    <select id="canTypeInput" class="flex-grow border border-gray-300 rounded px-3 py-2">
+                        <option value="STDID">Standard</option>
+                        <option value="EXTID">Extended</option>
+                    </select>
+                </div>
+                <div class="flex items-start">
+                    <label id="pid-label" class="w-1/4 text-sm font-medium pt-2">PIDs:</label>
+                    <div class="flex-grow flex flex-wrap border border-gray-300 rounded p-2 bg-gray-50">
+                        {% for i in "123456789" %}<input type="text" id="pid{{i}}" class="hex-input border border-gray-300 rounded px-2 py-1 m-1 w-16 text-center" maxlength="4" />{% endfor %}
+                        <input type="text" id="pid10" class="hex-input border border-gray-300 rounded px-2 py-1 m-1 w-16 text-center" maxlength="4" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-4 mt-8">
+                <button id="saveConfigsBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded shadow">Save</button>
+                <button id="defaultConfigsBtn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded shadow">Default</button>
+                <button id="readConfigsBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded shadow">Read</button>
+            </div>
+        </div>
+
+        <div id="received-card" class="bg-white rounded p-6 shadow-md flex flex-col w-full lg:w-1/2">
+            <h2 class="text-xl font-bold mb-4">Received Data</h2>
+            <div class="flex-grow">
+                <textarea id="outputTextarea" class="w-full h-64 lg:h-full border border-gray-300 rounded px-3 py-2 resize-none font-mono text-sm bg-gray-50" readonly></textarea>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'htv-tools-static/htv-config/JS/utils.js' %}"></script>
+<script src="{% static 'htv-tools-static/htv-config/JS/script.js' %}"></script>
+{% endblock %}
