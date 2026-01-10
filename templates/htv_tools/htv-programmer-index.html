@@ -4,17 +4,58 @@
 {% block title %}HTV Tracker Flash Utility{% endblock %}
 
 {% block content %}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+<!-- REMOVED: Conflicting Bootstrap 4 CDN that breaks the Navbar -->
+<!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"> -->
+
+<!-- Load Tool-Specific CSS -->
 <link rel="stylesheet" href="{% static 'htv-tools-static/htv-programmer/CSS/admin-css.css' %}" />
 <link rel="stylesheet" href="{% static 'htv-tools-static/htv-programmer/CSS/style.css' %}" />
 
 <style>
+    /* CRITICAL FIX: Restore Navbar Positioning 
+       The admin-css.css (SB Admin) defines a .navbar class that overrides our custom sidebar.
+       We must force our sidebar styles back with high specificity or !important.
+    */
+    body > .navbar, nav.navbar {
+        position: fixed !important;
+        left: 1rem !important;
+        top: 50% !important;
+        transform: translateY(-50%) scale(var(--navbar-scale, 1)) !important;
+        width: 5.5rem !important;
+        height: 24.5rem !important;
+        flex-direction: column !important; /* Restore vertical layout */
+        align-items: center !important;
+        padding: 0.5rem 0 !important;
+        background: #fff !important; /* Ensure background isn't overridden */
+        box-shadow: 0 0 40px rgba(0, 0, 0, 0.03) !important;
+        border-radius: 10px !important;
+        z-index: 1050 !important; /* Higher than SB Admin content */
+    }
+
+    /* Reset navbar items to prevent SB Admin horizontal layout interference */
+    .navbar__list {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        height: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        list-style: none !important;
+    }
+
+    /* Ensure the body margin respects the sidebar */
+    body {
+        margin-left: 7rem !important;
+    }
+
     /* Scope everything to prevent base CSS from breaking the tool UI */
     .htv-tool-isolation {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         padding-top: 2rem;
         background-color: #f8f9fc;
         min-height: 100vh;
+        /* Ensure it doesn't overlap the navbar if fixed */
+        margin-top: 20px; 
     }
 
     /* Force the DataBox to be responsive and fit the card */
@@ -27,57 +68,81 @@
         border: 1px solid #d1d3e2;
         padding: 1rem;
         border-radius: 0.35rem;
+        resize: none; /* Prevent manual resizing breaking layout */
     }
 
-    /* Retain original functional styles */
-    .Available { background-color: rgba(128, 255, 128, 0.2); color: rgb(64, 128, 92); }
-    .Missing { background-color: rgba(255, 128, 128, 0.2); color: rgb(255, 128, 128); }
+    /* Utility to color status text in the log if needed */
+    .log-error { color: #e74a3b; }
+    .log-success { color: #1cc88a; }
 </style>
 
 <div class="htv-tool-isolation">
     <div class="container-fluid">
+        <!-- Page Heading -->
         <div class="d-sm-flex align-items-center justify-content-between mb-4">
-            <h1 class="h3 mb-0 text-gray-800">HTV Tracker Flash Utility</h1>
-            <span class="text-muted small">Device User: {{ user.username|default:"Guest" }}</span>
+            <h1 class="h3 mb-0 text-gray-800">HTV Programmer</h1>
         </div>
 
-        <div id="errBanner" class="alert alert-danger" style="display: none;">
-            <span id="errBannerText"></span>
-            <button class="close" type="button"><span>×</span></button>
-        </div>
-        <div id="successBanner" class="alert alert-success" style="display: none;">
-            <span id="successBannerText"></span>
-            <button class="close hide-banner-btn" type="button"><span>×</span></button>
-        </div>
+        <div class="row">
+            <!-- Controls Card -->
+            <div class="col-xl-4 col-lg-5">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h6 class="m-0 font-weight-bold text-primary">Controls</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex flex-column" style="gap: 15px;">
+                            <button id="openSerialPortBtn" class="btn btn-primary btn-icon-split">
+                                <span class="icon text-white-50">🔌</span>
+                                <span class="text">Open Serial Port</span>
+                            </button>
 
-        <div class="card shadow mb-4">
-            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                <div class="d-flex align-items-center">
-                    <h6 class="m-0 font-weight-bold text-primary">Device Status:</h6>
-                    <div id="deviceInfo" class="ml-3" style="display: none">
-                        <span id="boardType" class="badge badge-info"></span>
-                        <small class="text-dark ml-1">v<span id="majorVersion"></span>.<span id="minorVersion"></span></small>
+                            <button id="selectFileBtn" class="btn btn-info btn-icon-split">
+                                <span class="icon text-white-50">📂</span>
+                                <span class="text">Select Binary File</span>
+                            </button>
+
+                            <hr>
+
+                            <button id="updateFirmwareBtn" class="btn btn-success btn-icon-split" disabled>
+                                <span class="icon text-white-50">⚡</span>
+                                <span class="text">Update Firmware</span>
+                            </button>
+
+                            <button id="updateFilesBtn" class="btn btn-warning btn-icon-split" disabled>
+                                <span class="icon text-white-50">📁</span>
+                                <span class="text">Update Files</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
-                <div class="dropdown no-arrow">
-                    <button class="btn btn-sm btn-outline-primary" id="selectFileBtn">Select Binary File</button>
-                    <button id="openSerialPortBtn" class="btn btn-sm btn-primary ml-2 shadow-sm">Connect to Device</button>
-                </div>
             </div>
-            <div class="card-body">
-                <textarea id="dataBox" readonly></textarea>
+
+            <!-- Output Log Card -->
+            <div class="col-xl-8 col-lg-7">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Output Log</h6>
+                    </div>
+                    <div class="card-body">
+                        <textarea id="dataBox" readonly>HTV Tracker Flash Utility initialized...</textarea>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Modals -->
 <div class="modal fade" id="fileUploadModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-sm" role="document">
         <div class="modal-content">
             <div class="modal-header"><h5 class="modal-title">Updating Files</h5></div>
             <div class="modal-body">
-                <p id="fileWritingLabel" class="small"></p>
-                <progress id="progressBarPrograms" value="0" max="100" class="w-100"></progress>
+                <p id="fileWritingLabel" class="small">Writing...</p>
+                <div class="progress">
+                    <div id="progressBarPrograms" class="progress-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -88,14 +153,19 @@
         <div class="modal-content">
             <div class="modal-header"><h5 class="modal-title">Updating Firmware</h5></div>
             <div class="modal-body">
-                <p id="iapFlashCountLabel" class="small"></p>
-                <progress id="progressBarFirmware" value="0" max="100" class="w-100"></progress>
+                <p id="iapFlashCountLabel" class="small">Flashing...</p>
+                <div class="progress">
+                    <div id="progressBarFirmware" class="progress-bar bg-success" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Scripts -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Bootstrap JS (If base.html doesn't load it, we might need it for modals, but check conflicts first) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script> 
 <script src="{% static 'htv-tools-static/htv-programmer/JS/script.js' %}"></script>
+
 {% endblock %}
