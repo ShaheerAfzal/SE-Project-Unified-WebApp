@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     'HLS_viewer_backend',
     'shipment_form_backend',
     'htv_tools_backend',
+    'serial_backend',
+
 ]
 
 MIDDLEWARE = [
