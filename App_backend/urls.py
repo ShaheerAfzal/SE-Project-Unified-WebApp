@@ -16,12 +16,19 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.shortcuts import render
+
+# View to serve your index.html
+def index_view(request):
+    return render(request, 'index.html')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    
+    # Root Landing Page
+    path('', index_view, name='home'),
 
-    #app urls 
-
+    # API Routes
     path('api/hls/', include('HLS_viewer_backend.urls')),
     path('api/shipment_forms/', include('shipment_form_backend.urls')),
     path('api/htv_tools/', include('htv_tools_backend.urls')),
