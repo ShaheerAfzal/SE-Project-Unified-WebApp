@@ -2,7 +2,7 @@
 :root {
     --primary: #2563eb;
     --primary-hover: #1e40af;
-    --bg-body: #f1f5f9;
+    --bg-body: #111827;
     --bg-card: #ffffff;
     --text-main: #0f172a;
     --text-muted: #64748b;
@@ -16,7 +16,7 @@
 
 body {
     font-family: 'Segoe UI', system-ui, sans-serif;
-    background: var(--bg-body);
+    background: #111827;
     color: var(--text-main);
     padding: 2rem;
     line-height: 1.5;
