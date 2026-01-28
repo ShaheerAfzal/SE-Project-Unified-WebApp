@@ -39,8 +39,8 @@ const utils = {
             }
             return response;
         } catch (err) {
-            ui.toast(err.message, 'error');
             console.error("Fetch Error:", err);
+            ui.toast(err.message, 'error');
             throw err;
         }
     }
@@ -81,7 +81,6 @@ const ui = {
             return;
         }
 
-        // Updated to use 'list-item' class
         this.els.templateList.innerHTML = state.templates.map(t => `
             <li class="list-item flex-between ${String(t.id) === String(state.currentTemplateId) ? 'active' : ''}" 
                 onclick="window.app.selectTemplate('${t.id}')">
@@ -89,7 +88,7 @@ const ui = {
                     <div class="font-bold text-sm">${t.name}</div>
                     <div class="text-xs" style="color: var(--text-muted);">${new Date(t.created_at).toLocaleDateString()}</div>
                 </div>
-                <button class="btn-danger btn-sm"
+                <button class="btn btn-danger btn-sm"
                         onclick="event.stopPropagation(); window.app.deleteTemplate('${t.id}')"
                         title="Delete Template">
                     <i data-feather="x" style="width:14px; height:14px;"></i>
@@ -118,7 +117,6 @@ const ui = {
         if (keys.length === 0) {
             this.els.dynamicForm.innerHTML = '<div style="color: var(--accent); grid-column: span 2;">No placeholders found in this template.</div>';
         } else {
-            // Updated to use 'form-group' and 'form-input'
             this.els.dynamicForm.innerHTML = keys.map(key => `
                 <div class="form-group">
                     <label class="form-label">${key.replace(/_/g, ' ')}</label>
@@ -162,7 +160,6 @@ const ui = {
             return;
         }
 
-        // Updated to use 'doc-item' class
         this.els.historyList.innerHTML = documents.map(doc => {
             const isSelected = String(doc.id) === String(state.editingDocId);
             const activeClass = isSelected ? 'active' : '';
@@ -200,24 +197,27 @@ const ui = {
     openUploadModal() {
         document.getElementById('uploadForm').reset();
         document.getElementById('fileName').textContent = '';
-        this.els.uploadModal.classList.remove('hidden'); 
+        this.els.uploadModal.classList.remove('hidden');
     },
 
     openPreviewModal() {
-        this.els.previewModal.classList.remove('hidden'); 
+        this.els.previewModal.classList.remove('hidden');
         this.els.previewContainer.innerHTML = '<div style="display:flex; justify-content:center; align-items:center; height:100%; color: #374151;">Loading Preview...</div>';
     },
 
     closeModal(modalId) {
-        document.getElementById(modalId).classList.add('hidden'); 
+        document.getElementById(modalId).classList.add('hidden');
     },
 
+    // --- FIX: Fixed Toast Function (Removed the deleting logic) ---
     toast(msg, type = 'success') {
         const el = document.getElementById('toast');
+        if (!el) return console.error("Toast element missing");
+
         el.textContent = msg;
-        // Updated to use standard semantic classes
         el.className = `toast show ${type}`;
-        
+
+        // Hide after 3 seconds, but DO NOT remove from DOM
         setTimeout(() => el.classList.remove('show'), 3000);
     }
 };
@@ -238,7 +238,6 @@ window.app = {
         fileInput.onchange = (e) => {
             if (e.target.files[0]) document.getElementById('fileName').textContent = e.target.files[0].name;
         };
-        // Updated to use 'drag-active' class defined in CSS
         dropzone.ondragover = (e) => { e.preventDefault(); dropzone.classList.add('drag-active'); };
         dropzone.ondragleave = () => dropzone.classList.remove('drag-active');
         dropzone.ondrop = (e) => {
@@ -420,7 +419,9 @@ window.app = {
     },
 
     async downloadCurrentPreview() {
-        if (!state.lastPreviewBlob) return;
+        if (!state.lastPreviewBlob) {
+            return ui.toast('No preview available to download', 'error');
+        }
         const url = window.URL.createObjectURL(state.lastPreviewBlob);
         const a = document.createElement('a');
         a.href = url;
@@ -477,10 +478,11 @@ window.app = {
         } catch (e) { /* handled */ }
     },
 
+    // --- FIX: Ensure we use 'window.URL' safely ---
     async downloadDoc(id, format = 'docx') {
         try {
             ui.toast(`Generating ${format.toUpperCase()}...`, 'info');
-            const response = await utils.fetch(`${API_BASE}/documents/${id}/preview/?format=${format}`);
+            const response = await utils.fetch(`${API_BASE}/documents/${id}/preview/?file_format=${format}`);
 
             if (response instanceof Response) {
                 const blob = await response.blob();

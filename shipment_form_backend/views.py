@@ -143,15 +143,24 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def preview(self, request, pk=None):
         doc_gen = self.get_object()
-        download_format = request.query_params.get('format', 'docx')
+        download_format = request.query_params.get('file_format', 'docx')
         
         # 1. Generate DOCX in memory
         docx_stream = doc_gen.generate_and_attach_file()
         
         # 2. Filename setup
         safe_name = "".join([c for c in doc_gen.template.name if c.isalnum() or c in (' ', '-', '_')]).strip()
-        safe_key = "".join([c for c in str(doc_gen.key_field_value) if c.isalnum() or c in (' ', '-', '_')]).strip()
-        filename_base = f"{safe_name}_{safe_key or 'generated'}"
+        
+        # Try key_field_value first, then fall back to getting it from field_values
+        key_value = doc_gen.key_field_value
+        if not key_value and doc_gen.template.key_field:
+            key_value = doc_gen.field_values.get(doc_gen.template.key_field)
+        
+        if key_value:
+            safe_key = "".join([c for c in str(key_value) if c.isalnum() or c in (' ', '-', '_')]).strip()
+        else:
+            safe_key = ''
+        filename_base = f"{safe_name}_{safe_key}" if safe_key else f"{safe_name}_generated"
 
         # 3. PDF Handling
         if download_format == 'pdf':
