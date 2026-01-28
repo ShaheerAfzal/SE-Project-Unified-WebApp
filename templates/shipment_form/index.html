@@ -11,7 +11,12 @@
         --border-color: #374151;
         --text-main: #f3f4f6;
         --text-muted: #9ca3af;
-        --primary: #8b5cf6; /* Purple accent for Logistics */
+        --primary: #8b5cf6;
+    }
+
+    /* Force reset any list styles that might be coming from base.html */
+    ul, li {
+        list-style: none !important;
     }
 
     body, html {
@@ -19,195 +24,173 @@
         margin: 0 !important;
         color: var(--text-main) !important;
     }
-
-    /* Target the parent layout containers from base.html */
-    aside, .sidebar, [class*="sidebar"] {
-        background-color: #1f2937 !important;
-        border-right: 1px solid var(--border-color) !important;
-    }
-
+    
+    /* FIX: Force content to right to avoid left-sidebar overlap */
     .content-wrapper, .main-content {
-        background-color: var(--bg-deep) !important;
-        margin-left: 7rem !important; 
+        margin-left: 6rem !important; /* Pushes content right */
+        width: calc(100% - 6rem) !important;
         padding: 0 !important;
     }
-
-    /* Card styling for dark mode */
+    
     .card {
         background: var(--bg-card) !important;
-        border: 1px solid var(--border-color) !important;
-        border-radius: 1rem !important;
         backdrop-filter: blur(8px);
-        color: var(--text-main) !important;
     }
-
-    /* Input styling */
-    .form-input, .form-select, .form-control {
-        background: #0f172a !important;
-        border: 1px solid var(--border-color) !important;
-        color: var(--text-main) !important;
-        border-radius: 0.5rem !important;
-    }
-
-    .form-input:focus {
-        border-color: var(--primary) !important;
-        outline: none;
-    }
-
-    /* Active state for history/template items */
-    .document-item.active {
+    
+    .doc-item.active {
         background-color: rgba(139, 92, 246, 0.2) !important;
         border-color: var(--primary) !important;
     }
-
-    .template-list li:hover {
-        background: rgba(255, 255, 255, 0.05);
-    }
 </style>
 
-<script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="{% static 'shipment-static/CSS/shipment_style.css' %}">
+
 <script src="https://unpkg.com/jszip/dist/jszip.min.js"></script>
 <script src="https://unpkg.com/docx-preview/dist/docx-preview.min.js"></script>
+<script src="https://unpkg.com/feather-icons"></script>
 
-<div class="min-h-screen bg-[#111827] p-6 md:p-10 font-sans">
+<div class="shipment-container">
     
-    <header class="mb-10">
-        <h1 class="text-3xl font-black text-white tracking-tight flex items-center gap-3">
-            <span class="text-purple-500">📦</span> Shipment Generator
+    <div>
+        <h1 class="header-title">
+            <span class="text-primary">📦</span> Shipment Generator
         </h1>
-        <p class="text-gray-400 mt-2 text-lg">Upload templates, configure keys, and generate professional documents.</p>
-    </header>
+        <p class="header-subtitle">Upload templates, configure keys, and generate professional documents.</p>
+    </div>
 
-    <div class="flex flex-col lg:flex-row gap-8">
-        <aside class="w-full lg:w-80 space-y-6">
-            <div class="card p-6 shadow-2xl">
-                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Templates</h3>
-                <button class="w-full bg-purple-600 hover:bg-purple-500 text-black font-bold py-3 px-4 rounded-xl transition-all shadow-lg shadow-purple-900/20 flex items-center justify-center gap-2 mb-6" onclick="ui.openUploadModal()">
-                    <i data-feather="plus-circle" class="w-5 h-5"></i> Upload New
+    <div class="main-layout">
+        
+        <aside class="sidebar">
+            <div class="card">
+                <h3 class="form-label">Templates</h3>
+                <button class="btn btn-primary btn-full mb-4" onclick="ui.openUploadModal()">
+                    <i data-feather="plus-circle" style="width:18px; height:18px;"></i> Upload New
                 </button>
-                <ul class="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar" id="templateList">
-                    <li class="text-center text-gray-500 py-4 italic text-sm">Loading templates...</li>
+                <ul class="list-container" id="templateList" style="max-height: 400px; overflow-y: auto;">
+                    <li style="text-align: center; color: var(--text-muted); padding: 1rem;">Loading templates...</li>
                 </ul>
             </div>
             
-            <div class="card p-6 shadow-2xl">
-                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Stats</h3>
-                <div class="flex items-center gap-4">
-                    <div class="bg-purple-500/10 p-3 rounded-lg">
-                        <i data-feather="file-text" class="text-purple-400 w-6 h-6"></i>
+            <div class="card">
+                <h3 class="form-label">Stats</h3>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div style="background: rgba(139, 92, 246, 0.1); padding: 0.75rem; border-radius: 0.5rem;">
+                        <i data-feather="file-text" class="text-primary"></i>
                     </div>
                     <div>
-                        <div class="text-2xl font-black text-black" id="statTemplates">0</div>
-                        <div class="text-[10px] font-bold text-gray-500 uppercase">Available Templates</div>
+                        <div style="font-size: 1.5rem; font-weight: 900;" id="statTemplates">0</div>
+                        <div class="form-label" style="margin:0;">Available Templates</div>
                     </div>
                 </div>
             </div>
         </aside>
 
-        <main class="flex-grow card p-8 shadow-2xl min-h-[600px] relative" id="mainContent">
-            <div id="emptyState" class="flex flex-col items-center justify-center h-full py-20 text-center">
-                <div class="w-24 h-24 bg-gray-800 rounded-full flex items-center justify-center mb-6 border border-gray-700">
-                    <i data-feather="file-plus" class="w-10 h-10 text-gray-600"></i>
+        <main class="card main-content" id="mainContent">
+            <div id="emptyState" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 4rem 0;">
+                <div style="background: #374151; padding: 1.5rem; border-radius: 50%; margin-bottom: 1.5rem;">
+                    <i data-feather="file-plus" style="width: 40px; height: 40px; color: #9ca3af;"></i>
                 </div>
-                <h3 class="text-xl font-bold text-black mb-2">No Template Selected</h3>
-                <p class="text-gray-500 max-w-xs">Select a document template from the sidebar to start mapping fields.</p>
+                <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">No Template Selected</h3>
+                <p style="color: var(--text-muted);">Select a document template from the sidebar to begin.</p>
             </div>
 
-            <div id="workspace" class="hidden space-y-10">
-                <div class="bg-gray-900/40 rounded-2xl p-6 border border-gray-700/50">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-sm font-bold text-purple-400 uppercase tracking-tighter">Template Settings</h3>
-                        <button class="text-xs font-bold text-red-400 hover:text-red-300 transition-colors" onclick="app.deleteTemplate()">Delete Template</button>
+            <div id="workspace" class="hidden">
+                <div style="background: rgba(17, 24, 39, 0.4); border-radius: 1rem; padding: 1.5rem; border: 1px solid rgba(55, 65, 81, 0.5); margin-bottom: 2rem;">
+                    <div class="flex-between mb-4">
+                        <h3 class="form-label" style="color: var(--primary);">Template Settings</h3>
+                        <button class="btn btn-danger btn-sm" onclick="app.deleteTemplate()">Delete Template</button>
                     </div>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="space-y-2">
-                            <label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Template Name</label>
-                            <input type="text" id="configName" class="form-input w-full px-4 py-3">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Template Name</label>
+                            <input type="text" id="configName" class="form-input">
                         </div>
-                        <div class="space-y-2">
-                            <label class="text-[10px] font-bold text-gray-500 uppercase ml-1">Key Field (Identifier)</label>
-                            <select id="configKeyField" class="form-select w-full px-4 py-3">
+                        <div class="form-group">
+                            <label class="form-label">Key Field (Identifier)</label>
+                            <select id="configKeyField" class="form-select">
                                 <option value="">-- Select a Key Field --</option>
                             </select>
                         </div>
                     </div>
-                    <div class="mt-6 text-right">
-                        <button class="bg-gray-700 hover:bg-gray-600 text-black text-xs font-bold py-2 px-6 rounded-lg transition-all" onclick="app.updateSettings()">Update Settings</button>
+                    <div style="text-align: right; margin-top: 1rem;">
+                        <button class="btn btn-secondary btn-sm" onclick="app.updateSettings()">Update Settings</button>
                     </div>
                 </div>
 
                 <div>
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-sm font-bold text-purple-400 uppercase tracking-tighter">Document Data</h3>
-                        <span id="editModeIndicator" class="hidden bg-amber-500 text-black text-[10px] font-black px-2 py-1 rounded">EDITING SAVED DOC</span>
+                    <div class="flex-between mb-4">
+                        <h3 class="form-label" style="color: var(--primary);">Document Data</h3>
+                        <span id="editModeIndicator" class="hidden" style="background: var(--accent); color: black; font-size: 0.65rem; font-weight: 900; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">EDITING SAVED DOC</span>
                     </div>
                     
-                    <div id="dynamicForm" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div id="dynamicForm" class="form-grid">
                         </div>
                     
-                    <div class="mt-10 flex flex-wrap gap-4">
-                        <button class="bg-purple-600 hover:bg-purple-500 text-black font-bold py-3 px-8 rounded-xl transition-all shadow-lg shadow-purple-900/40" onclick="app.generatePreview()">
+                    <div class="mt-4" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 2rem;">
+                        <button class="btn btn-primary" onclick="app.generatePreview()">
                             Generate & Preview
                         </button>
-                        <button class="bg-gray-800 border border-gray-600 hover:bg-gray-700 text-black font-bold py-3 px-8 rounded-xl transition-all" onclick="app.saveToBackend()" id="btnSave">
+                        <button class="btn btn-secondary" onclick="app.saveToBackend()" id="btnSave">
                             Save to Cloud
                         </button>
-                        <button class="text-gray-500 hover:text-gray-300 font-bold px-4" onclick="app.clearForm()">Clear</button>
+                        <button class="btn" style="color: var(--text-muted);" onclick="app.clearForm()">Clear</button>
                     </div>
                 </div>
 
-                <div class="border-t border-gray-700 pt-10">
-                    <h3 class="text-sm font-bold text-purple-400 uppercase tracking-tighter mb-6">Recent Generations</h3>
-                    <ul id="historyList" class="grid grid-cols-1 md:grid-cols-2 gap-3"></ul>
+                <div style="border-top: 1px solid var(--border-color); margin-top: 2.5rem; padding-top: 2.5rem;">
+                    <h3 class="form-label" style="color: var(--primary);">Recent Generations</h3>
+                    <ul id="historyList" class="form-grid" style="gap: 1rem; list-style: none; padding: 0;"></ul>
                 </div>
             </div>
         </main>
     </div>
 </div>
 
-<div class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" id="uploadModal">
-    <div class="card w-full max-w-lg p-8 mx-4">
-        <h2 class="text-2xl font-bold mb-6">Upload Template</h2>
-        <form id="uploadForm" onsubmit="app.handleUpload(event)" class="space-y-6">
-            <div class="space-y-2">
-                <label class="text-xs font-bold text-gray-500 uppercase">Friendly Name</label>
-                <input type="text" name="name" class="form-input w-full px-4 py-3" required placeholder="e.g. Daily Shipping Manifest">
+<div class="modal-overlay hidden" id="uploadModal">
+    <div class="modal-card">
+        <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem;">Upload Template</h2>
+        <form id="uploadForm" onsubmit="app.handleUpload(event)">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">Friendly Name</label>
+                <input type="text" name="name" class="form-input" required placeholder="e.g. Daily Shipping Manifest">
             </div>
             
-            <div class="dropzone border-2 border-dashed border-gray-700 rounded-2xl p-10 text-center hover:border-purple-500/50 transition-all cursor-pointer group" id="dropzone">
-                <i data-feather="upload-cloud" class="w-10 h-10 text-gray-600 mx-auto mb-4 group-hover:text-purple-400 transition-colors"></i>
-                <p class="text-gray-400">Drag & Drop .docx file here</p>
-                <p class="text-xs text-gray-600 mt-2">Maximum file size: 10MB</p>
+            <div class="dropzone" id="dropzone">
+                <i data-feather="upload-cloud" style="width: 40px; height: 40px; color: var(--text-muted); margin-bottom: 1rem;"></i>
+                <p style="color: var(--text-muted);">Drag & Drop .docx file here</p>
+                <p class="text-xs" style="color: var(--text-muted); margin-top: 0.5rem;">Maximum file size: 10MB</p>
                 <input type="file" name="file" id="fileInput" accept=".docx" hidden required>
-                <div id="fileName" class="mt-4 text-purple-400 font-bold text-sm"></div>
+                <div id="fileName" class="mt-4 text-primary font-bold text-sm"></div>
             </div>
 
-            <div class="flex justify-end gap-4 mt-8">
-                <button type="button" class="text-gray-400 font-bold px-4" onclick="ui.closeModal('uploadModal')">Cancel</button>
-                <button type="submit" class="bg-purple-600 hover:bg-purple-500 text-black font-bold py-3 px-8 rounded-xl transition-all shadow-lg shadow-purple-900/20">Upload</button>
+            <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
+                <button type="button" class="btn btn-secondary" onclick="ui.closeModal('uploadModal')">Cancel</button>
+                <button type="submit" class="btn btn-primary">Upload</button>
             </div>
         </form>
     </div>
 </div>
 
-<div class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" id="previewModal">
-    <div class="card w-full max-w-5xl h-[90vh] p-8 mx-4 flex flex-col">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-bold">Document Preview</h2>
-            <button class="bg-gray-800 p-2 rounded-full hover:bg-gray-700 transition-colors" onclick="ui.closeModal('previewModal')">
-                <i data-feather="x" class="w-6 h-6"></i>
+<div class="modal-overlay hidden" id="previewModal">
+    <div class="modal-card modal-lg">
+        <div class="flex-between mb-4">
+            <h2 style="font-size: 1.5rem; font-weight: 700;">Document Preview</h2>
+            <button class="btn btn-secondary btn-sm" onclick="ui.closeModal('previewModal')">
+                <i data-feather="x"></i>
             </button>
         </div>
         
-        <div id="previewContainer" class="flex-grow overflow-y-auto bg-white rounded-xl shadow-inner custom-scrollbar">
-            <div class="flex items-center justify-center h-full text-gray-400 italic">Initializing preview renderer...</div>
+        <div id="previewContainer" style="flex-grow: 1; overflow-y: auto; background: white; border-radius: 0.5rem; color: black; padding: 1rem;">
+            <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #9ca3af; font-style: italic;">
+                Initializing preview renderer...
+            </div>
         </div>
 
-        <div class="mt-6 flex justify-end">
-            <button class="bg-purple-600 hover:bg-purple-500 text-black font-bold py-3 px-8 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-purple-900/40" onclick="app.downloadCurrentPreview()">
-                <i data-feather="download" class="w-5 h-5"></i> Download DOCX
+        <div style="margin-top: 1.5rem; text-align: right;">
+            <button class="btn btn-primary" onclick="app.downloadCurrentPreview()">
+                <i data-feather="download"></i> Download DOCX
             </button>
         </div>
     </div>
@@ -215,16 +198,9 @@
 
 <div id="toast" class="toast"></div>
 
-<script src="https://unpkg.com/feather-icons"></script>
 <script src="{% static 'shipment-static/JS/shipment_script.js' %}"></script>
 <script>
     feather.replace();
-    
-    // Simple helper to fix modal visibility in this demo
-    const uiModals = {
-        open: (id) => document.getElementById(id).classList.remove('hidden'),
-        close: (id) => document.getElementById(id).classList.add('hidden')
-    };
 </script>
 
 {% endblock %}

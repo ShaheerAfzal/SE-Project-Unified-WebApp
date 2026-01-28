@@ -1,5 +1,5 @@
 // --- 1. CONFIG & UTILS ---
-const API_BASE = '/api/shipment_forms'; 
+const API_BASE = '/api/shipment_forms';
 
 const utils = {
     getCookie(name) {
@@ -37,7 +37,7 @@ const utils = {
             if (contentType && contentType.includes("application/json")) {
                 return await response.json();
             }
-            return response; 
+            return response;
         } catch (err) {
             ui.toast(err.message, 'error');
             console.error("Fetch Error:", err);
@@ -51,9 +51,9 @@ const state = {
     templates: [],
     currentTemplateId: null,
     currentTemplateFields: {},
-    editingDocId: null, // ID of the document currently being edited
-    documents: [],      // Local cache of history
-    lastPreviewBlob: null 
+    editingDocId: null,
+    documents: [],
+    lastPreviewBlob: null
 };
 
 // --- 3. UI CONTROLLER ---
@@ -76,22 +76,28 @@ const ui = {
 
     renderTemplateList() {
         if (!state.templates.length) {
-            this.els.templateList.innerHTML = '<li class="text-center" style="color:var(--text-muted)">No templates found</li>';
+            this.els.templateList.innerHTML = '<li style="text-align: center; color: var(--text-muted); padding: 1rem;">No templates found</li>';
             this.els.statTemplates.textContent = 0;
             return;
         }
 
+        // Updated to use 'list-item' class
         this.els.templateList.innerHTML = state.templates.map(t => `
-            <li class="template-item ${String(t.id) === String(state.currentTemplateId) ? 'active' : ''}" 
-                onclick="window.app.selectTemplate('${t.id}')"> 
-                <span class="template-name">${t.name}</span>
-                <span class="template-meta">${new Date(t.created_at).toLocaleDateString()}</span>
-                <button class="template-delete-btn" 
-                        onclick="event.stopPropagation(); window.app.deleteTemplate('${t.id}')" 
-                        title="Delete Template">×</button>
+            <li class="list-item flex-between ${String(t.id) === String(state.currentTemplateId) ? 'active' : ''}" 
+                onclick="window.app.selectTemplate('${t.id}')">
+                <div>
+                    <div class="font-bold text-sm">${t.name}</div>
+                    <div class="text-xs" style="color: var(--text-muted);">${new Date(t.created_at).toLocaleDateString()}</div>
+                </div>
+                <button class="btn-danger btn-sm"
+                        onclick="event.stopPropagation(); window.app.deleteTemplate('${t.id}')"
+                        title="Delete Template">
+                    <i data-feather="x" style="width:14px; height:14px;"></i>
+                </button>
             </li>
         `).join('');
         this.els.statTemplates.textContent = state.templates.length;
+        if (typeof feather !== 'undefined') feather.replace();
     },
 
     renderWorkspace(template, fieldsData) {
@@ -100,18 +106,19 @@ const ui = {
 
         // Config Form
         this.els.configName.value = template.name;
-        
+
         let fields = fieldsData.fields || {};
         if (typeof fields === 'string') {
-            try { fields = JSON.parse(fields); } catch(e) { console.error("Parse Error", e); }
+            try { fields = JSON.parse(fields); } catch (e) { console.error("Parse Error", e); }
         }
         state.currentTemplateFields = fields;
 
         // Key Field Dropdown
         const keys = Object.keys(fields);
         if (keys.length === 0) {
-            this.els.dynamicForm.innerHTML = '<div style="color: orange; padding: 1rem;">No placeholders found.</div>';
+            this.els.dynamicForm.innerHTML = '<div style="color: var(--accent); grid-column: span 2;">No placeholders found in this template.</div>';
         } else {
+            // Updated to use 'form-group' and 'form-input'
             this.els.dynamicForm.innerHTML = keys.map(key => `
                 <div class="form-group">
                     <label class="form-label">${key.replace(/_/g, ' ')}</label>
@@ -126,77 +133,65 @@ const ui = {
                 <option value="${key}" ${key === fieldsData.key_field ? 'selected' : ''}>${key}</option>
             `).join('')}
         `;
-        
-        // When switching templates, reset the edit mode
+
         this.toggleEditMode(false);
     },
 
     toggleEditMode(isEditing) {
-        if(isEditing) {
+        if (isEditing) {
             this.els.editModeIndicator.classList.remove('hidden');
-            this.els.btnSave.textContent = "Overwrite Previous Doc";
-            this.els.btnSave.classList.add('btn-primary');
+            this.els.btnSave.textContent = "Overwrite Cloud Save";
+            this.els.btnSave.classList.add('btn-amber');
             this.els.btnSave.classList.remove('btn-secondary');
         } else {
             this.els.editModeIndicator.classList.add('hidden');
-            this.els.btnSave.textContent = "Save New Document";
+            this.els.btnSave.textContent = "Save to Cloud";
             this.els.btnSave.classList.add('btn-secondary');
-            this.els.btnSave.classList.remove('btn-primary');
+            this.els.btnSave.classList.remove('btn-amber');
             state.editingDocId = null;
             document.querySelectorAll('#dynamicForm input').forEach(i => i.value = '');
         }
-        // Re-render history to update the active highlight
         this.renderHistory(state.documents);
     },
 
     renderHistory(documents) {
-        state.documents = documents; // Update cache
-        
-        if(!documents || !documents.length) {
-            this.els.historyList.innerHTML = '<li class="text-center" style="color:#ccc; padding:1rem;">No documents generated yet</li>';
+        state.documents = documents;
+
+        if (!documents || !documents.length) {
+            this.els.historyList.innerHTML = '<li style="text-align: center; color: var(--text-muted); grid-column: 1 / -1;">No history yet</li>';
             return;
         }
-        
+
+        // Updated to use 'doc-item' class
         this.els.historyList.innerHTML = documents.map(doc => {
             const isSelected = String(doc.id) === String(state.editingDocId);
             const activeClass = isSelected ? 'active' : '';
-            
-            // Construct Display Name: TemplateName_KeyVal
+
             let displayName = doc.key_field_value || 'Generated Document';
             const template = state.templates.find(t => String(t.id) === String(doc.template));
             if (template) {
                 const keyVal = doc.key_field_value || 'generated';
-                // Note: We don't assume extension here, it depends on download format
                 displayName = `${template.name}_${keyVal}`;
             }
 
             return `
-            <li class="document-item ${activeClass}" 
-                onclick="window.app.editDoc('${doc.id}')"
-                style="padding:0.8rem; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
-                
-                <div style="flex: 1; padding-right: 1rem;">
-                    <div style="font-weight:600; overflow-wrap: break-word;">
+            <li class="doc-item ${activeClass}" onclick="window.app.editDoc('${doc.id}')">
+                <div style="overflow: hidden; padding-right: 1rem;">
+                    <div class="font-bold text-sm" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                         ${displayName}
-                        ${isSelected ? '<span style="font-size:0.7rem; background:var(--primary); color:white; padding:2px 6px; border-radius:4px; margin-left:8px;">EDITING</span>' : ''}
                     </div>
-                    <div style="font-size:0.8rem; color:#888">${new Date(doc.created_at).toLocaleString()}</div>
+                    <div class="text-xs" style="color: var(--text-muted);">
+                        ${new Date(doc.created_at).toLocaleString()}
+                        ${isSelected ? '<span style="color: var(--primary); font-weight: bold; margin-left: 0.5rem;">EDITING</span>' : ''}
+                    </div>
                 </div>
-                
-                <!-- Action Buttons -->
-                <div style="display:flex; gap:0.5rem; flex-shrink: 0; align-items: center;" onclick="event.stopPropagation()">
-                    <button class="btn btn-sm btn-secondary" onclick="window.app.editDoc('${doc.id}')" title="Edit">✏️</button>
-                    <button class="btn btn-sm btn-secondary" onclick="window.app.previewSavedDoc('${doc.id}')" title="Preview">👁️</button>
-                    
-                    <!-- NEW: Separate Download Buttons -->
-                    <button class="btn btn-sm btn-secondary" onclick="window.app.downloadDoc('${doc.id}', 'docx')" title="Download Word" style="font-size: 0.8rem;">
-                        <span style="color:#2b579a; font-weight:bold;">W</span>⬇
-                    </button>
-                    <button class="btn btn-sm btn-secondary" onclick="window.app.downloadDoc('${doc.id}', 'pdf')" title="Download PDF" style="font-size: 0.8rem;">
-                        <span style="color:#d32f2f; font-weight:bold;">PDF</span>⬇
-                    </button>
 
-                    <button class="btn btn-sm btn-danger" onclick="window.app.deleteDoc('${doc.id}')" title="Delete">🗑️</button>
+                <div class="gap-2" onclick="event.stopPropagation()">
+                     <button class="btn btn-secondary btn-sm" onclick="window.app.editDoc('${doc.id}')" title="Edit Data">✏️</button>
+                     <button class="btn btn-secondary btn-sm" onclick="window.app.previewSavedDoc('${doc.id}')" title="Preview">👁️</button>
+                     <button class="btn btn-secondary btn-sm" style="color: #60a5fa;" onclick="window.app.downloadDoc('${doc.id}', 'docx')" title="DOCX">W</button>
+                     <button class="btn btn-secondary btn-sm" style="color: #f87171;" onclick="window.app.downloadDoc('${doc.id}', 'pdf')" title="PDF">PDF</button>
+                     <button class="btn btn-danger btn-sm" onclick="window.app.deleteDoc('${doc.id}')">🗑️</button>
                 </div>
             </li>
         `}).join('');
@@ -205,22 +200,24 @@ const ui = {
     openUploadModal() {
         document.getElementById('uploadForm').reset();
         document.getElementById('fileName').textContent = '';
-        this.els.uploadModal.classList.add('show');
+        this.els.uploadModal.classList.remove('hidden'); 
     },
 
     openPreviewModal() {
-        this.els.previewModal.classList.add('show');
-        this.els.previewContainer.innerHTML = '<div class="loading-spinner" style="border-top-color: var(--primary);"></div> Loading Preview...';
+        this.els.previewModal.classList.remove('hidden'); 
+        this.els.previewContainer.innerHTML = '<div style="display:flex; justify-content:center; align-items:center; height:100%; color: #374151;">Loading Preview...</div>';
     },
 
     closeModal(modalId) {
-        document.getElementById(modalId).classList.remove('show');
+        document.getElementById(modalId).classList.add('hidden'); 
     },
 
-    toast(msg, type='success') {
+    toast(msg, type = 'success') {
         const el = document.getElementById('toast');
         el.textContent = msg;
-        el.className = `toast ${type} show`;
+        // Updated to use standard semantic classes
+        el.className = `toast show ${type}`;
+        
         setTimeout(() => el.classList.remove('show'), 3000);
     }
 };
@@ -235,15 +232,18 @@ window.app = {
     setupDragDrop() {
         const dropzone = document.getElementById('dropzone');
         const fileInput = document.getElementById('fileInput');
+        if (!dropzone || !fileInput) return;
+
         dropzone.onclick = () => fileInput.click();
         fileInput.onchange = (e) => {
-            if(e.target.files[0]) document.getElementById('fileName').textContent = e.target.files[0].name;
+            if (e.target.files[0]) document.getElementById('fileName').textContent = e.target.files[0].name;
         };
-        dropzone.ondragover = (e) => { e.preventDefault(); dropzone.classList.add('dragover'); };
-        dropzone.ondragleave = () => dropzone.classList.remove('dragover');
+        // Updated to use 'drag-active' class defined in CSS
+        dropzone.ondragover = (e) => { e.preventDefault(); dropzone.classList.add('drag-active'); };
+        dropzone.ondragleave = () => dropzone.classList.remove('drag-active');
         dropzone.ondrop = (e) => {
             e.preventDefault();
-            dropzone.classList.remove('dragover');
+            dropzone.classList.remove('drag-active');
             if (e.dataTransfer.files[0]) {
                 fileInput.files = e.dataTransfer.files;
                 document.getElementById('fileName').textContent = e.dataTransfer.files[0].name;
@@ -265,11 +265,11 @@ window.app = {
             if (!template) return console.error("Template not found");
 
             const fieldsData = await utils.fetch(`${API_BASE}/templates/${id}/fields/`);
-            
+
             let history = [];
             try {
                 history = await utils.fetch(`${API_BASE}/templates/${id}/documents/`);
-            } catch(e) { console.warn("History fetch failed", e); }
+            } catch (e) { console.warn("History fetch failed", e); }
 
             ui.renderTemplateList();
             ui.renderWorkspace(template, fieldsData);
@@ -284,14 +284,14 @@ window.app = {
         try {
             const newTemplate = await utils.fetch(`${API_BASE}/templates/`, { method: 'POST', body: formData });
             ui.closeModal('uploadModal');
-            ui.toast('Template Uploaded');
+            ui.toast('Template Uploaded', 'success');
             await this.loadTemplates();
             if (newTemplate && newTemplate.id) this.selectTemplate(newTemplate.id);
         } catch (e) { /* handled in fetch */ }
     },
 
     async updateSettings() {
-        if(!state.currentTemplateId) return;
+        if (!state.currentTemplateId) return;
         const name = document.getElementById('configName').value;
         const keyField = document.getElementById('configKeyField').value;
         try {
@@ -299,9 +299,9 @@ window.app = {
                 method: 'PATCH',
                 body: JSON.stringify({ name: name, key_field: keyField })
             });
-            ui.toast('Settings Updated');
+            ui.toast('Settings Updated', 'info');
             const t = state.templates.find(t => String(t.id) === String(state.currentTemplateId));
-            if(t) t.name = name;
+            if (t) t.name = name;
             ui.renderTemplateList();
         } catch (e) { /* handled */ }
     },
@@ -317,10 +317,10 @@ window.app = {
         try {
             const doc = await utils.fetch(`${API_BASE}/documents/${docId}/`);
             state.editingDocId = String(docId);
-            
+
             let values = doc.field_values || {};
             if (typeof values === 'string') {
-                try { values = JSON.parse(values); } 
+                try { values = JSON.parse(values); }
                 catch (e) { console.error("JSON Parse Error", e); }
             }
 
@@ -329,12 +329,12 @@ window.app = {
                 const input = document.querySelector(`#dynamicForm input[name="${key}"]`);
                 if (input) input.value = val;
             }
-            
+
             ui.toggleEditMode(true);
             ui.toast('Editing Document', 'info');
             document.getElementById('dynamicForm').scrollIntoView({ behavior: 'smooth' });
 
-        } catch(e) { console.error(e); }
+        } catch (e) { console.error(e); }
     },
 
     clearForm() {
@@ -350,12 +350,12 @@ window.app = {
         if (!confirm("Are you sure you want to delete this document?")) return;
         try {
             await utils.fetch(`${API_BASE}/documents/${docId}/`, { method: 'DELETE' });
-            ui.toast('Document Deleted');
+            ui.toast('Document Deleted', 'error');
             if (String(state.editingDocId) === String(docId)) {
                 ui.toggleEditMode(false);
                 document.querySelectorAll('#dynamicForm input').forEach(i => i.value = '');
             }
-            if(state.currentTemplateId) {
+            if (state.currentTemplateId) {
                 const history = await utils.fetch(`${API_BASE}/templates/${state.currentTemplateId}/documents/`);
                 ui.renderHistory(history);
             }
@@ -363,7 +363,7 @@ window.app = {
     },
 
     async generatePreview() {
-        if(!state.currentTemplateId) return;
+        if (!state.currentTemplateId) return;
         ui.openPreviewModal();
         const data = {
             template: state.currentTemplateId,
@@ -381,7 +381,7 @@ window.app = {
                 const history = await utils.fetch(`${API_BASE}/templates/${state.currentTemplateId}/documents/`);
                 ui.renderHistory(history);
             }
-        } catch (e) { 
+        } catch (e) {
             ui.closeModal('previewModal');
         }
     },
@@ -394,13 +394,13 @@ window.app = {
     async renderPreviewBlob(docId) {
         try {
             const response = await utils.fetch(`${API_BASE}/documents/${docId}/preview/`);
-            if(response instanceof Response) {
+            if (response instanceof Response) {
                 const blob = await response.blob();
-                state.lastPreviewBlob = blob; 
-                
+                state.lastPreviewBlob = blob;
+
                 const container = document.getElementById('previewContainer');
                 container.innerHTML = '';
-                
+
                 if (typeof docx !== 'undefined') {
                     await docx.renderAsync(blob, container, null, {
                         className: "docx-viewer",
@@ -428,11 +428,11 @@ window.app = {
         document.body.appendChild(a);
         a.click();
         a.remove();
-        ui.toast('Downloading...');
+        ui.toast('Downloading...', 'success');
     },
 
     async saveToBackend() {
-        if(!state.currentTemplateId) return;
+        if (!state.currentTemplateId) return;
         const data = {
             template: state.currentTemplateId,
             field_values: this.getFormData()
@@ -444,14 +444,14 @@ window.app = {
                     method: 'PATCH',
                     body: JSON.stringify(data)
                 });
-                ui.toast('Document Overwritten');
-            } 
+                ui.toast('Document Overwritten', 'success');
+            }
             else {
                 await utils.fetch(`${API_BASE}/documents/`, {
                     method: 'POST',
                     body: JSON.stringify(data)
                 });
-                ui.toast('Saved New Document');
+                ui.toast('Saved New Document', 'success');
             }
             const history = await utils.fetch(`${API_BASE}/templates/${state.currentTemplateId}/documents/`);
             ui.renderHistory(history);
@@ -462,48 +462,46 @@ window.app = {
         const targetId = id || state.currentTemplateId;
         if (!targetId) return;
 
-        if(!confirm("Delete this template and all its documents?")) return;
+        if (!confirm("Delete this template and all its documents?")) return;
         try {
             await utils.fetch(`${API_BASE}/templates/${targetId}/`, { method: 'DELETE' });
-            
+
             if (String(targetId) === String(state.currentTemplateId)) {
                 state.currentTemplateId = null;
                 document.getElementById('workspace').classList.add('hidden');
                 document.getElementById('emptyState').classList.remove('hidden');
             }
-            
+
             this.loadTemplates();
-            ui.toast('Deleted');
-        } catch(e) { /* handled */ }
+            ui.toast('Deleted', 'error');
+        } catch (e) { /* handled */ }
     },
 
-    // --- UPDATED: DOWNLOAD FUNCTION ---
     async downloadDoc(id, format = 'docx') {
         try {
-            ui.toast(`Generating ${format.toUpperCase()}...`);
-            // Pass format query parameter to backend
-            const response = await utils.fetch(`${API_BASE}/documents/${id}/preview/?format=${format}`); 
-            
-            if(response instanceof Response) {
+            ui.toast(`Generating ${format.toUpperCase()}...`, 'info');
+            const response = await utils.fetch(`${API_BASE}/documents/${id}/preview/?format=${format}`);
+
+            if (response instanceof Response) {
                 const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                
+
                 const disposition = response.headers.get('content-disposition');
                 let filename = `document_${id}.${format}`;
                 if (disposition && disposition.includes('filename=')) {
                     filename = disposition.split('filename=')[1].replace(/"/g, '');
                 }
-                
+
                 a.download = filename;
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
             }
-        } catch (e) { 
-            console.error(e); 
-            ui.toast("Download Failed (Check server logs)", "error");
+        } catch (e) {
+            console.error(e);
+            ui.toast("Download Failed", "error");
         }
     }
 };
