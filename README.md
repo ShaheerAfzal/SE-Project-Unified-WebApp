@@ -99,9 +99,9 @@ The most significant upgrade in the suite. It moves beyond fixed fields to a fle
 
 | Table | Key Fields |
 | --- | --- |
-| **Streams** | <br>`name`, `url`, `is_active` |
-| **Templates** | <br>`name`, `file_path`, `fields (JSON)`, `key_field` |
-| **Documents** | <br>`template_id`, `field_values (JSON)`, `key_field_value` |
+| **Streams** | `name`, `url`, `is_active` |
+| **Templates** | `name`, `file_path`, `fields (JSON)`, `key_field` |
+| **Documents** | `template_id`, `field_values (JSON)`, `key_field_value` |
 | **HTV Config** | `imei`, `ip_address`, `port`, `pid_mappings` |
 
 ---
