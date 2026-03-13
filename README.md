@@ -34,7 +34,7 @@ The **Unified Tools App** serves as a Swiss Army knife for the client's technica
 ### 2. Installation
 ```bash
 # Clone the repository
-git clone https://github.com/its-aleezA/unified-tools-app.git
+git clone https://github.com/ShaheerAfzal/SE-Project-Unified-WebApp.git
 cd unified-tools-app
 
 # Install dependencies
