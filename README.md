@@ -46,7 +46,7 @@ python manage.py runserver
 ```
 
 ### 3. Usage
-Access the application at `http://127.0.0.1:8000/`. Use the sidebar to navigate between tools.
+Access the application at `http://127.0.0.1:8000/` (i.e your localhost, you can also deploy it to a company server, it is meant to be used locally). Use the sidebar to navigate between tools.
 
 ---
 
