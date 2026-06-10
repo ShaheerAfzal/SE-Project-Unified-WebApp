@@ -4,7 +4,16 @@
 *.db
 db.sqlite3
 
-# # SQLite temporary/journal files
-# *.sqlite3-journal
-# *.sqlite3-shm
-# *.sqlite3-wal
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment variables & virtual environments
+.env
+.venv/
+venv/
+env/
+
+# Static files collected for production (optional, but good practice)
+staticfiles/
