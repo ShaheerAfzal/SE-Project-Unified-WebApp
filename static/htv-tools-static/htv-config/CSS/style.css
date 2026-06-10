@@ -1,3 +1,6 @@
+/* HTV Config — Component Overrides
+   Uses design tokens from DESIGN.md via Tailwind + shared CSS */
+
 #received-card {
   min-height: 70vh;
   min-width: 35vw;
@@ -11,9 +14,7 @@
   min-width: 20%;
 }
 
-
-
-/* General Styles */
+/* ── LED Indicators ── */
 .led-indicators {
   display: flex;
   gap: 1rem;
@@ -27,34 +28,15 @@
   text-align: center;
 }
 
-/* LED Styles */
 .led {
   width: 20px;
   height: 20px;
   border-radius: 50%;
   margin-bottom: 0.5rem;
-  border: 2px solid #999;
-  /* Outline for better visibility */
+  border: 2px solid #524533;
 }
 
-/* Default Off State */
-.led-off {
-  background-color: #ccc;
-}
-
-/* Glowing Green State */
-.led-green {
-  background-color: #4caf50;
-  box-shadow: 0 0 10px #4caf50;
-}
-
-/* Glowing Red State */
-.led-red {
-  background-color: #f44336;
-  box-shadow: 0 0 10px #f44336;
-}
-
-
+/* ── Signal Bars ── */
 .signal-indicator {
   display: flex;
   align-items: flex-end;
@@ -71,33 +53,23 @@
 
 .signal-bars .bar {
   width: 4px;
-  background-color: #ccc;
+  background-color: #524533;
   transition: background-color 0.3s;
 }
 
-.signal-bars .bar-1 {
-  height: 5px;
-}
-
-.signal-bars .bar-2 {
-  height: 10px;
-}
-
-.signal-bars .bar-3 {
-  height: 15px;
-}
-
-.signal-bars .bar-4 {
-  height: 20px;
-}
+.signal-bars .bar-1 { height: 5px; }
+.signal-bars .bar-2 { height: 10px; }
+.signal-bars .bar-3 { height: 15px; }
+.signal-bars .bar-4 { height: 20px; }
 
 .signal-bars .active {
-  background-color: green;
+  background-color: #9eff8b;
+  box-shadow: 0 0 4px rgba(158, 255, 139, 0.5);
 }
 
 .signal-unknown {
   font-size: 18px;
-  color: #888;
+  color: #9f8e78;
   display: none;
 }
 

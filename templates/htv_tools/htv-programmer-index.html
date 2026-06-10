@@ -1,86 +1,221 @@
 {% extends "navbar/base.html" %}
 {% load static %}
 
-{% block title %}HTV Tracker Flash Utility{% endblock %}
+{% block title %}HTV Tracker Flash Utility | Unified Portal{% endblock %}
 
-{% block content %}
-<!-- REMOVED: Conflicting Bootstrap 4 CDN that breaks the Navbar -->
-<!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"> -->
-
-<!-- Load Tool-Specific CSS -->
+{% block head_extra %}
+<!-- Bootstrap CSS needed for modal/progress-bar JS -->
 <link rel="stylesheet" href="{% static 'htv-tools-static/htv-programmer/CSS/admin-css.css' %}" />
 <link rel="stylesheet" href="{% static 'htv-tools-static/htv-programmer/CSS/style.css' %}" />
 
 <style>
-    /* CRITICAL FIX: Restore Navbar Positioning 
-       The admin-css.css (SB Admin) defines a .navbar class that overrides our custom sidebar.
-       We must force our sidebar styles back with high specificity or !important.
-    */
-    body > .navbar, nav.navbar {
-        position: fixed !important;
-        left: 1rem !important;
-        top: 50% !important;
-        transform: translateY(-50%) scale(var(--navbar-scale, 1)) !important;
-        width: 5.5rem !important;
-        height: 24.5rem !important;
-        flex-direction: column !important; /* Restore vertical layout */
-        align-items: center !important;
-        padding: 0.5rem 0 !important;
-        background: #fff !important; /* Ensure background isn't overridden */
-        box-shadow: 0 0 40px rgba(0, 0, 0, 0.03) !important;
-        border-radius: 10px !important;
-        z-index: 1050 !important; /* Higher than SB Admin content */
+    /* ═══════════════════════════════════════════════════════════
+       DESIGN.MD OVERRIDE — Force Cassette Futurism over Bootstrap
+       ═══════════════════════════════════════════════════════════ */
+
+    /* Reset Bootstrap card styles */
+    .card {
+        background-color: #1A1A1A !important;
+        border: 2px solid #524533 !important;
+        border-radius: 0 !important;
+        box-shadow: inset 1px 1px 0px rgba(255,255,255,0.1), 2px 2px 0px rgba(0,0,0,0.5) !important;
+        color: #e5e2e1 !important;
+    }
+    .card-header {
+        background-color: #201f1f !important;
+        border-bottom: 1px solid #524533 !important;
+        border-radius: 0 !important;
+    }
+    .card-header .m-0,
+    .card-header h6 {
+        color: #ffd597 !important;
+        font-family: 'Space Mono', monospace !important;
+        font-size: 12px !important;
+        letter-spacing: 0.1em !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        text-shadow: 0 0 6px rgba(255, 176, 0, 0.8) !important;
+    }
+    .card-body {
+        background-color: #1A1A1A !important;
     }
 
-    /* Reset navbar items to prevent SB Admin horizontal layout interference */
-    .navbar__list {
-        display: flex !important;
-        flex-direction: column !important;
-        width: 100% !important;
-        height: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        list-style: none !important;
+    /* Page heading */
+    .h3, h1.h3 {
+        color: #ffd597 !important;
+        font-family: 'Space Mono', monospace !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        text-shadow: 0 0 6px rgba(255, 176, 0, 0.8) !important;
+        letter-spacing: 0.02em !important;
     }
 
-    /* Ensure the body margin respects the sidebar */
-    body {
-        margin-left: 7rem !important;
-    }
-
-    /* Scope everything to prevent base CSS from breaking the tool UI */
+    /* Body / page background */
     .htv-tool-isolation {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        padding-top: 2rem;
-        background-color: #f8f9fc;
+        font-family: 'JetBrains Mono', monospace !important;
+        background-color: #131313 !important;
+        color: #e5e2e1 !important;
+        padding: 24px !important;
         min-height: 100vh;
-        /* Ensure it doesn't overlap the navbar if fixed */
-        margin-top: 20px; 
+        margin-top: 0 !important;
     }
 
-    /* Force the DataBox to be responsive and fit the card */
+    /* Override Bootstrap buttons with mech-btn style */
+    .btn-primary, .btn-info, .btn-success, .btn-warning {
+        border-radius: 0 !important;
+        font-family: 'Space Mono', monospace !important;
+        font-size: 12px !important;
+        letter-spacing: 0.1em !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        transition: all 0.1s ease !important;
+    }
+    .btn-primary {
+        background-color: #1A1A1A !important;
+        border: 1px solid #ffd597 !important;
+        color: #ffd597 !important;
+        box-shadow: inset 1px 1px 0px rgba(255,255,255,0.1), 2px 2px 0px rgba(0,0,0,0.8) !important;
+    }
+    .btn-primary:hover {
+        background-color: #ffd597 !important;
+        color: #432c00 !important;
+    }
+    .btn-primary:active {
+        transform: translate(2px, 2px) !important;
+        box-shadow: none !important;
+    }
+    .btn-info {
+        background-color: #1A1A1A !important;
+        border: 1px solid #9eff8b !important;
+        color: #9eff8b !important;
+        box-shadow: inset 1px 1px 0px rgba(255,255,255,0.1), 2px 2px 0px rgba(0,0,0,0.8) !important;
+    }
+    .btn-info:hover {
+        background-color: #9eff8b !important;
+        color: #003a02 !important;
+    }
+    .btn-success {
+        background-color: #ffb000 !important;
+        border: 2px solid #ffd597 !important;
+        color: #432c00 !important;
+        box-shadow: 0 0 15px rgba(255, 176, 0, 0.6) !important;
+    }
+    .btn-success:hover {
+        background-color: #ffba43 !important;
+        box-shadow: 0 0 20px rgba(255, 176, 0, 0.8) !important;
+    }
+    .btn-warning {
+        background-color: #1A1A1A !important;
+        border: 1px solid #ffd1c0 !important;
+        color: #ffd1c0 !important;
+        box-shadow: inset 1px 1px 0px rgba(255,255,255,0.1), 2px 2px 0px rgba(0,0,0,0.8) !important;
+    }
+    .btn-warning:hover {
+        background-color: #ffd1c0 !important;
+        color: #5a1c00 !important;
+    }
+    .btn:disabled, .btn[disabled] {
+        opacity: 0.4 !important;
+    }
+
+    .btn-icon-split .icon {
+        background-color: transparent !important;
+        border-right: 1px solid rgba(255,255,255,0.1) !important;
+    }
+
+    /* DataBox / Output Log */
     #dataBox {
         width: 100% !important;
         height: 60vh;
         min-height: 400px;
-        font-family: 'Courier New', Courier, monospace;
-        background-color: #ffffff;
-        border: 1px solid #d1d3e2;
-        padding: 1rem;
-        border-radius: 0.35rem;
-        resize: none; /* Prevent manual resizing breaking layout */
+        font-family: 'JetBrains Mono', monospace !important;
+        font-size: 12px !important;
+        background-color: #0e0e0e !important;
+        border: 1px solid #524533 !important;
+        border-bottom: 1px solid #9f8e78 !important;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.8), inset 0 0 10px rgba(0,0,0,0.5) !important;
+        color: #9eff8b !important;
+        text-shadow: 0 0 8px rgba(158, 255, 139, 0.9) !important;
+        padding: 1rem !important;
+        border-radius: 0 !important;
+        resize: none;
     }
 
-    /* Utility to color status text in the log if needed */
-    .log-error { color: #e74a3b; }
-    .log-success { color: #1cc88a; }
-</style>
+    /* Bootstrap Modals — dark theme */
+    .modal-content {
+        background-color: #201f1f !important;
+        border: 2px solid #524533 !important;
+        border-radius: 0 !important;
+        color: #e5e2e1 !important;
+    }
+    .modal-header {
+        border-bottom: 1px solid #524533 !important;
+    }
+    .modal-header .modal-title {
+        color: #ffd597 !important;
+        font-family: 'Space Mono', monospace !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        text-shadow: 0 0 6px rgba(255, 176, 0, 0.8) !important;
+    }
+    .modal-body {
+        color: #e5e2e1 !important;
+    }
+    .modal-body .small, .modal-body p {
+        color: #d7c4ac !important;
+        font-family: 'JetBrains Mono', monospace !important;
+    }
 
+    /* Progress bars — amber theme */
+    .progress {
+        background-color: #0e0e0e !important;
+        border-radius: 0 !important;
+        border: 1px solid #524533 !important;
+        height: 8px !important;
+    }
+    .progress-bar {
+        background-color: #ffb000 !important;
+        border-radius: 0 !important;
+        box-shadow: 0 0 8px rgba(255, 176, 0, 0.6) !important;
+    }
+    .progress-bar.bg-success {
+        background-color: #9eff8b !important;
+        box-shadow: 0 0 8px rgba(158, 255, 139, 0.6) !important;
+    }
+
+    /* Grid/Container overrides */
+    .container-fluid {
+        padding: 0 !important;
+    }
+    .col-xl-4, .col-xl-8, .col-lg-5, .col-lg-7 {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+    .row {
+        margin-left: -12px !important;
+        margin-right: -12px !important;
+    }
+    .shadow {
+        box-shadow: inset 1px 1px 0px rgba(255,255,255,0.1), 2px 2px 0px rgba(0,0,0,0.5) !important;
+    }
+
+    /* Status text */
+    .log-error { color: #ffb4ab !important; }
+    .log-success { color: #9eff8b !important; }
+
+    /* Kill Bootstrap rounded on everything */
+    .rounded, .rounded-lg, .rounded-xl, .rounded-2xl, [class*="rounded"] {
+        border-radius: 0 !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
 <div class="htv-tool-isolation">
     <div class="container-fluid">
         <!-- Page Heading -->
         <div class="d-sm-flex align-items-center justify-content-between mb-4">
-            <h1 class="h3 mb-0 text-gray-800">HTV Programmer</h1>
+            <h1 class="h3 mb-0 crt-glitch" data-text="HTV PROGRAMMER">HTV PROGRAMMER</h1>
         </div>
 
         <div class="row">
@@ -88,7 +223,7 @@
             <div class="col-xl-4 col-lg-5">
                 <div class="card shadow mb-4">
                     <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                        <h6 class="m-0 font-weight-bold text-primary">Controls</h6>
+                        <h6 class="m-0 font-weight-bold">Controls</h6>
                     </div>
                     <div class="card-body">
                         <div class="d-flex flex-column" style="gap: 15px;">
@@ -102,7 +237,7 @@
                                 <span class="text">Select Binary File</span>
                             </button>
 
-                            <hr>
+                            <hr style="border-color: #524533;">
 
                             <button id="updateFirmwareBtn" class="btn btn-success btn-icon-split" disabled>
                                 <span class="icon text-white-50">⚡</span>
@@ -122,7 +257,7 @@
             <div class="col-xl-8 col-lg-7">
                 <div class="card shadow mb-4">
                     <div class="card-header py-3">
-                        <h6 class="m-0 font-weight-bold text-primary">Output Log</h6>
+                        <h6 class="m-0 font-weight-bold">Output Log</h6>
                     </div>
                     <div class="card-body">
                         <textarea id="dataBox" readonly>HTV Tracker Flash Utility initialized...</textarea>
@@ -164,8 +299,6 @@
 
 <!-- Scripts -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<!-- Bootstrap JS (If base.html doesn't load it, we might need it for modals, but check conflicts first) -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script> 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{% static 'htv-tools-static/htv-programmer/JS/script.js' %}"></script>
-
 {% endblock %}

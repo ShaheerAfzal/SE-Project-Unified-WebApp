@@ -1,62 +1,74 @@
 {% extends "navbar/base.html" %}
 {% load static %}
 
-{% block title %}Serial Tool{% endblock %}
+{% block title %}Serial Tool | Unified Portal{% endblock %}
 
 {% block content %}
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Serial Port Communication</title>
-    <!-- Include Tailwind CSS -->
-    <link
-      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
-      rel="stylesheet"
-    />
-  </head>
+<div class="p-margin min-h-screen">
 
-  <body class="bg-gray-900 p-4">
-    <div class="max-w-md mx-auto bg-white rounded p-6 shadow-md">
-      <h1 class="text-2xl font-bold mb-4 text-black">Serial Port Communication</h1>
+    <!-- Page Header -->
+    <div class="chassis-panel p-panel_padding relative mb-margin">
+        <div class="screw tl"></div><div class="screw tr"></div>
+        <div class="screw bl"></div><div class="screw br"></div>
 
-      <div class="mb-4">
-        <label for="dataInput" class="block mb-1 text-black">Data to Send:</label>
-        <input
-          type="text"
-          id="dataInput"
-          class="w-full border border-gray-300 rounded px-3 py-2"
-        />
-      </div>
+        <div class="flex items-center justify-between border-b border-outline-variant pb-2 mb-4">
+            <h1 class="font-headline-md text-headline-md font-bold text-primary crt-glow-amber uppercase crt-glitch" data-text="SERIAL PORT COMMUNICATION">
+                SERIAL PORT COMMUNICATION
+            </h1>
+            <span class="font-code-sm text-code-sm text-outline">MODULE::SERIAL</span>
+        </div>
 
-      <button
-        id="sendBtn"
-        class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-      >
-        Send
-      </button>
+        <!-- Data Input -->
+        <div class="relative recessed-input p-2 mt-4 mb-4">
+            <label class="floating-label">DATA TO SEND</label>
+            <input class="w-full bg-transparent border-none focus:ring-0 text-primary font-code-sm py-2 px-1 focus:outline-none placeholder-outline-variant/50 crt-glow-amber"
+                   placeholder="Enter command..." type="text" id="dataInput" />
+        </div>
 
-      <div class="mt-4">
-        <label for="outputTextarea" class="block mb-1 text-black">Received Data:</label>
-        <textarea
-          id="outputTextarea"
-          class="w-full h-32 border border-gray-300 rounded px-3 py-2 resize-none"
-          readonly
-        ></textarea>
-      </div>
-
-      <button
-        id="connectBtn"
-        class="mt-4 bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-      >
-        Connect
-      </button>
+        <!-- Send + Connect Buttons -->
+        <div class="flex gap-gutter mt-gutter">
+            <button id="sendBtn" class="mech-btn mech-btn-primary flex-1 justify-center">
+                <span class="material-symbols-outlined text-[18px]">send</span>
+                SEND
+            </button>
+            <button id="connectBtn" class="mech-btn mech-btn-secondary flex-1 justify-center">
+                <span class="material-symbols-outlined text-[18px]">cable</span>
+                CONNECT
+            </button>
+        </div>
     </div>
 
-    <!-- Include JavaScript -->
-    <script>
-      document.addEventListener("DOMContentLoaded", () => {
+    <!-- Received Data Panel -->
+    <div class="chassis-panel p-panel_padding relative">
+        <div class="screw tl"></div><div class="screw tr"></div>
+        <div class="screw bl"></div><div class="screw br"></div>
+
+        <div class="flex items-center justify-between border-b border-outline-variant pb-2 mb-4">
+            <h2 class="font-headline-md text-[18px] font-bold text-primary crt-glow-amber uppercase">
+                RECEIVED DATA
+            </h2>
+            <span class="font-label-caps text-label-caps text-secondary crt-glow-green uppercase">LIVE TERMINAL</span>
+        </div>
+
+        <div class="relative recessed-input p-2">
+            <label class="floating-label">OUTPUT STREAM</label>
+            <textarea id="outputTextarea"
+                class="w-full h-64 bg-transparent border-none focus:ring-0 text-secondary font-code-sm text-code-sm py-2 px-1 focus:outline-none resize-none crt-glow-green"
+                readonly
+                placeholder="> Waiting for device communication..."></textarea>
+        </div>
+    </div>
+
+    <!-- Terminal Footer -->
+    <div class="mt-4 pt-4 border-t border-outline-variant flex items-center text-outline">
+        <span class="font-code-sm text-code-sm">&gt; Serial interface ready</span>
+        <span class="blinking-cursor ml-1"></span>
+    </div>
+</div>
+
+<!-- Preserved JavaScript — Serial Port API logic -->
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
         let port;
         let reader;
         let writer;
@@ -66,45 +78,42 @@
         const sendBtn = document.getElementById("sendBtn");
 
         connectBtn.addEventListener("click", async () => {
-          try {
-            port = await navigator.serial.requestPort();
-            await port.open({ baudRate: 115200 });
+            try {
+                port = await navigator.serial.requestPort();
+                await port.open({ baudRate: 115200 });
 
-            reader = port.readable.getReader();
-            writer = port.writable.getWriter();
+                reader = port.readable.getReader();
+                writer = port.writable.getWriter();
 
-            readLoop();
-          } catch (error) {
-            console.error("Error connecting:", error);
-          }
+                readLoop();
+            } catch (error) {
+                console.error("Error connecting:", error);
+            }
         });
 
         async function readLoop() {
-          try {
-            while (true) {
-              const { value, done } = await reader.read();
-              if (done) {
-                reader.releaseLock();
-                break;
-              }
-              const receivedText = new TextDecoder().decode(value);
-              outputTextarea.value += receivedText;
+            try {
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) {
+                        reader.releaseLock();
+                        break;
+                    }
+                    const receivedText = new TextDecoder().decode(value);
+                    outputTextarea.value += receivedText;
+                }
+            } catch (error) {
+                console.error("Error reading:", error);
             }
-          } catch (error) {
-            console.error("Error reading:", error);
-          }
         }
 
         sendBtn.addEventListener("click", async () => {
-          let data = document.getElementById("dataInput").value;
-          data += "\r\n";
-          const encoder = new TextEncoder();
-          if (!port || !port.writable) return;
-          await writer.write(encoder.encode(data));
+            let data = document.getElementById("dataInput").value;
+            data += "\r\n";
+            const encoder = new TextEncoder();
+            if (!port || !port.writable) return;
+            await writer.write(encoder.encode(data));
         });
-      });
-    </script>
-  </body>
-</html>
-
+    });
+</script>
 {% endblock %}

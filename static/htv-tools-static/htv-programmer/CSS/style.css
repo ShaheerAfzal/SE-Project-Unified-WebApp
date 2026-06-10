@@ -1,5 +1,9 @@
+/* HTV Programmer — Component Overrides
+   Uses design tokens from DESIGN.md */
+
 .selected {
-    background-color: rgba(210,210,210);
+    background-color: rgba(255, 213, 151, 0.15);
+    border: 1px solid #524533;
 }
 
 .selectable:hover {
@@ -8,22 +12,26 @@
 
 .tiny-text {
     font-size: 0.7rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: #d7c4ac;
 }
 
-
+/* Reset button styles — let page-level CSS handle it */
 button {
-  all: unset;
+    all: unset;
 }
 
 button:focus {
-  outline: none;
-  box-shadow: none;
+    outline: none;
+    box-shadow: none;
 }
+
 .icon-button {
     background: none;
     border: none;
     outline: none;
     box-shadow: none;
+    color: #ffd597;
 }
 
 .icon-button:hover {
@@ -32,6 +40,7 @@ button:focus {
     outline: none;
     box-shadow: none;
     transform: scale(1.1);
+    color: #ffb000;
 }
 
 .icon-button:focus {
@@ -42,10 +51,10 @@ button:focus {
 }
 
 .text-icon {
-    font-size: 60vw; /* Default font size for mobile screens */
+    font-size: 60vw;
+    color: #524533;
 
-    /* Media query for computer screens with a min-width of 768px */
     @media (min-width: 768px) {
-        font-size: 15vw; /* Font size for computer screens */
+        font-size: 15vw;
     }
 }

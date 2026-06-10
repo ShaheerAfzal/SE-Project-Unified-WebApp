@@ -88,10 +88,10 @@ const ui = {
                     <div class="font-bold text-sm">${t.name}</div>
                     <div class="text-xs" style="color: var(--text-muted);">${new Date(t.created_at).toLocaleDateString()}</div>
                 </div>
-                <button class="btn btn-danger btn-sm"
+                <button class="btn btn-danger btn-sm" style="border: 1px solid #ffb4ab; padding: 4px 6px; line-height: 1; display: inline-flex; align-items: center; justify-content: center;"
                         onclick="event.stopPropagation(); window.app.deleteTemplate('${t.id}')"
                         title="Delete Template">
-                    <i data-feather="x" style="width:14px; height:14px;"></i>
+                    <span class="material-symbols-outlined" style="font-size:16px; color: #ffb4ab;">delete</span>
                 </button>
             </li>
         `).join('');

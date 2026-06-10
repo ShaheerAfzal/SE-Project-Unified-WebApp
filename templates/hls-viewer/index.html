@@ -1,287 +1,311 @@
 {% extends "navbar/base.html" %}
 {% load static %}
 
-{% block title %}Live Stream{% endblock %}
+{% block title %}HLS Stream Viewer | Unified Portal{% endblock %}
 
 {% block content %}
-<body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen">
+<div class="p-margin min-h-screen flex flex-col">
 
-    <!-- Logo -->
-    <img src="{% static 'images/white.png' %}" alt="Logo" class="w-32 mb-4">
+    <!-- Page Header -->
+    <div class="chassis-panel p-panel_padding relative mb-margin">
+        <div class="screw tl"></div><div class="screw tr"></div>
+        <div class="screw bl"></div><div class="screw br"></div>
 
-    <!-- Title and Subtitle -->
-    <div class="text-center mb-8">
-        <h1 class="text-4xl font-bold">HLS Viewer<small> v1.1</small></h1>
-        <p class="text-lg text-gray-400">Powered by hls.js</p>
+        <div class="flex items-center justify-between border-b border-outline-variant pb-2 mb-2">
+            <h1 class="font-headline-lg text-[24px] font-bold text-primary crt-glow-amber uppercase crt-glitch" data-text="HLS STREAM VIEWER">
+                HLS STREAM VIEWER
+            </h1>
+            <span class="font-code-sm text-code-sm text-outline">MODULE::HLS</span>
+        </div>
+        <p class="font-code-sm text-code-sm text-on-surface-variant mt-unit">&gt; Powered by hls.js // Stream Control Interface <span class="font-label-caps text-label-caps text-secondary crt-glow-green uppercase ml-4">● LIVE FEED</span></p>
     </div>
 
-    <!-- Video Section -->
-    <div class="w-full max-w-4xl">
-        <video id="video" controls autoplay height="450" class="w-full rounded-lg shadow-lg mb-4"></video>
+    <!-- Video Player Panel -->
+    <div class="chassis-panel p-panel_padding relative mb-margin flex-1">
+        <div class="screw tl"></div><div class="screw tr"></div>
+        <div class="screw bl"></div><div class="screw br"></div>
 
-        <!-- Dropdown for Video Sources -->
-        <div class="mb-6">
-            <label for="videoSrc" class="block mb-2 text-lg font-semibold">Select Stream:</label>
-            <select id="videoSrc" class="w-full p-2 bg-gray-800 text-white border border-gray-700 rounded">
+        <div class="flex items-center justify-between border-b border-outline-variant pb-2 mb-4">
+            <h2 class="font-headline-md text-[18px] font-bold text-primary crt-glow-amber uppercase">STREAM OUTPUT</h2>
+            <span class="font-code-sm text-code-sm text-outline">FEED::ACTIVE</span>
+        </div>
+
+        <div class="recessed-input p-1 mb-gutter">
+            <video id="video" controls autoplay height="450" class="w-full"></video>
+        </div>
+
+        <!-- Stream Selector -->
+        <div class="relative recessed-input p-2 mb-gutter">
+            <label class="floating-label">SELECT STREAM</label>
+            <select id="videoSrc" class="w-full bg-transparent border-none text-primary font-code-sm py-2 px-1 focus:outline-none crt-glow-amber appearance-none cursor-pointer">
                 {% for s in streams %}
-                    <option value="{{ s.url }}">{{ s.name }}</option>
+                    <option value="{{ s.url }}" class="bg-surface-container-lowest text-on-surface">{{ s.name }}</option>
                 {% empty %}
-                    <option disabled>No active streams available</option>
+                    <option disabled class="bg-surface-container-lowest">No active streams available</option>
                 {% endfor %}
             </select>
         </div>
 
-        <!-- Load Video Button -->
-        <button id="loadVideo" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded">
-            Load Video
-        </button>
-
-        <!-- Add Stream Button -->
-        <button id="openForm" class="w-full mt-2 bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded">
-            + Add New Stream
-        </button>
-
-        <!-- Delete Stream Button -->
-        <button id="deleteStream" class="w-full mt-2 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded">
-            🗑 Delete Selected Stream
-        </button>
-    </div>
-
-    <!-- Modal Form -->
-    <div id="formModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
-        <div class="bg-gray-800 p-6 rounded-lg w-96">
-            <h2 class="text-xl font-bold mb-4 text-center">Add New Stream</h2>
-            <form id="addStreamForm">
-                {% csrf_token %}
-                <div class="mb-4">
-                    <label class="block mb-2 font-semibold">Name</label>
-                    <input type="text" name="name" required class="w-full p-2 bg-gray-700 border border-gray-600 rounded">
-                </div>
-                <div class="mb-4">
-                    <label class="block mb-2 font-semibold">URL (.m3u8)</label>
-                    <input type="url" name="url" required class="w-full p-2 bg-gray-700 border border-gray-600 rounded">
-                    <div id="urlValidation" class="text-sm mt-1 hidden"></div>
-                </div>
-                <div class="mb-4">
-                    <label class="block mb-2 font-semibold">Description</label>
-                    <textarea name="description" class="w-full p-2 bg-gray-700 border border-gray-600 rounded"></textarea>
-                </div>
-                <div class="mb-4">
-                    <label class="inline-flex items-center">
-                        <input type="checkbox" name="is_active" checked class="mr-2"> Active
-                    </label>
-                </div>
-                <div class="flex justify-between">
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                        Save
-                    </button>
-                    <button type="button" id="closeForm" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
-                        Cancel
-                    </button>
-                </div>
-            </form>
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row gap-2">
+            <button id="loadVideo" class="mech-btn mech-btn-primary flex-1 justify-center">
+                <span class="material-symbols-outlined text-[18px]">play_circle</span>
+                LOAD VIDEO
+            </button>
+            <button id="openForm" class="mech-btn mech-btn-secondary flex-1 justify-center">
+                <span class="material-symbols-outlined text-[18px]">add_circle</span>
+                ADD NEW STREAM
+            </button>
+            <button id="deleteStream" class="mech-btn mech-btn-danger flex-1 justify-center">
+                <span class="material-symbols-outlined text-[18px]">delete</span>
+                DELETE STREAM
+            </button>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        const video = document.getElementById('video');
-        const videoSrcInput = document.getElementById('videoSrc');
-        const formModal = document.getElementById('formModal');
-        const openFormBtn = document.getElementById('openForm');
-        const closeFormBtn = document.getElementById('closeForm');
-        const addStreamForm = document.getElementById('addStreamForm');
+    <!-- Terminal Footer -->
+    <div class="mt-4 pt-4 border-t border-outline-variant flex items-center text-outline">
+        <span class="font-code-sm text-code-sm">&gt; Stream interface ready</span>
+        <span class="blinking-cursor ml-1"></span>
+    </div>
+</div>
 
-        function loadVideo(src) {
-            if (Hls.isSupported()) {
-                const hls = new Hls();
-                hls.loadSource(src);
-                hls.attachMedia(video);
-                hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
-            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = src;
-                video.addEventListener('loadedmetadata', () => video.play());
-            }
+<!-- Modal: Add New Stream -->
+<div id="formModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden z-50">
+    <div class="chassis-panel p-panel_padding w-96 relative">
+        <div class="screw tl"></div><div class="screw tr"></div>
+        <div class="screw bl"></div><div class="screw br"></div>
+
+        <div class="flex items-center justify-between border-b border-outline-variant pb-2 mb-4">
+            <h2 class="font-headline-md text-[18px] font-bold text-primary crt-glow-amber uppercase">ADD NEW STREAM</h2>
+        </div>
+
+        <form id="addStreamForm">
+            {% csrf_token %}
+            <div class="relative recessed-input p-2 mb-gutter">
+                <label class="floating-label">NAME</label>
+                <input type="text" name="name" required class="w-full bg-transparent border-none text-primary font-code-sm py-2 px-1 focus:outline-none crt-glow-amber placeholder-outline-variant/50" placeholder="Stream name...">
+            </div>
+            <div class="relative recessed-input p-2 mb-gutter">
+                <label class="floating-label">URL (.m3u8)</label>
+                <input type="url" name="url" required class="w-full bg-transparent border-none text-primary font-code-sm py-2 px-1 focus:outline-none crt-glow-amber placeholder-outline-variant/50" placeholder="https://...">
+                <div id="urlValidation" class="text-code-sm font-code-sm mt-1 hidden"></div>
+            </div>
+            <div class="relative recessed-input p-2 mb-gutter">
+                <label class="floating-label">DESCRIPTION</label>
+                <textarea name="description" class="w-full bg-transparent border-none text-on-surface font-code-sm py-2 px-1 focus:outline-none resize-none placeholder-outline-variant/50" placeholder="Optional description..." rows="2"></textarea>
+            </div>
+            <div class="mb-gutter flex items-center gap-2">
+                <input type="checkbox" name="is_active" checked class="accent-primary">
+                <span class="font-label-caps text-label-caps text-on-surface-variant uppercase">ACTIVE</span>
+            </div>
+            <div class="flex justify-end gap-2">
+                <button type="button" id="closeForm" class="mech-btn">CANCEL</button>
+                <button type="submit" class="mech-btn mech-btn-primary">SAVE</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script>
+    const video = document.getElementById('video');
+    const videoSrcInput = document.getElementById('videoSrc');
+    const formModal = document.getElementById('formModal');
+    const openFormBtn = document.getElementById('openForm');
+    const closeFormBtn = document.getElementById('closeForm');
+    const addStreamForm = document.getElementById('addStreamForm');
+
+    function loadVideo(src) {
+        if (Hls.isSupported()) {
+            const hls = new Hls();
+            hls.loadSource(src);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = src;
+            video.addEventListener('loadedmetadata', () => video.play());
         }
+    }
 
-        // URL validation function
-        async function testHLSStream(url) {
-            try {
-                const response = await fetch(url, { 
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/vnd.apple.mpegurl, application/x-mpegurl, */*'
-                    }
-                });
-                
-                if (!response.ok) {
-                    return { 
-                        success: false, 
-                        error: `Server returned ${response.status} ${response.statusText}` 
-                    };
+    // URL validation function
+    async function testHLSStream(url) {
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/vnd.apple.mpegurl, application/x-mpegurl, */*'
                 }
+            });
 
-                const text = await response.text();
-                const isHLSManifest = text.includes('#EXTM3U');
-                
-                if (!isHLSManifest) {
-                    return { 
-                        success: false, 
-                        error: 'Not a valid HLS stream (missing #EXTM3U header)' 
-                    };
-                }
-
-                return { success: true };
-                
-            } catch (error) {
-                return { 
-                    success: false, 
-                    error: `Cannot access URL: ${error.message}` 
+            if (!response.ok) {
+                return {
+                    success: false,
+                    error: `Server returned ${response.status} ${response.statusText}`
                 };
             }
-        }
 
-        document.getElementById('loadVideo').addEventListener('click', function() {
-            const newSrc = videoSrcInput.value;
-            if (newSrc) loadVideo(newSrc);
-        });
+            const text = await response.text();
+            const isHLSManifest = text.includes('#EXTM3U');
 
-        openFormBtn.addEventListener('click', () => formModal.classList.remove('hidden'));
-        closeFormBtn.addEventListener('click', () => formModal.classList.add('hidden'));
-
-        // Enhanced form submission with URL validation
-        addStreamForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(addStreamForm);
-            const data = Object.fromEntries(formData.entries());
-            data.is_active = formData.get('is_active') ? true : false;
-
-            // Show testing message in the form
-            const urlValidation = document.getElementById('urlValidation');
-            urlValidation.textContent = 'Testing URL...';
-            urlValidation.className = 'text-sm mt-1 text-blue-400';
-            urlValidation.classList.remove('hidden');
-
-            try {
-                const testResult = await testHLSStream(data.url);
-                
-                if (!testResult.success) {
-                    urlValidation.textContent = `❌ ${testResult.error}`;
-                    urlValidation.className = 'text-sm mt-1 text-red-400';
-                    return;
-                }
-
-                // If URL is valid, proceed to save
-                urlValidation.textContent = '✅ URL is valid - Saving...';
-                urlValidation.className = 'text-sm mt-1 text-green-400';
-
-                const response = await fetch("/api/hls/streams/", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value,
-                    },
-                    body: JSON.stringify(data)
-                });
-
-                if (response.ok) {
-                    urlValidation.textContent = '✅ Stream added successfully!';
-                    setTimeout(() => {
-                        formModal.classList.add('hidden');
-                        window.location.reload();
-                    }, 1000);
-                } else {
-                    urlValidation.textContent = '❌ Error saving stream';
-                    urlValidation.className = 'text-sm mt-1 text-red-400';
-                }
-            } catch (error) {
-                urlValidation.textContent = '❌ Unexpected error occurred';
-                urlValidation.className = 'text-sm mt-1 text-red-400';
+            if (!isHLSManifest) {
+                return {
+                    success: false,
+                    error: 'Not a valid HLS stream (missing #EXTM3U header)'
+                };
             }
-        });
 
-        // Real-time URL validation
-        const urlInput = document.querySelector('input[name="url"]');
-        urlInput.addEventListener('blur', async function() {
-            const url = this.value.trim();
-            const urlValidation = document.getElementById('urlValidation');
-            
-            if (!url) {
-                urlValidation.classList.add('hidden');
+            return { success: true };
+
+        } catch (error) {
+            return {
+                success: false,
+                error: `Cannot access URL: ${error.message}`
+            };
+        }
+    }
+
+    document.getElementById('loadVideo').addEventListener('click', function() {
+        const newSrc = videoSrcInput.value;
+        if (newSrc) loadVideo(newSrc);
+    });
+
+    openFormBtn.addEventListener('click', () => formModal.classList.remove('hidden'));
+    closeFormBtn.addEventListener('click', () => formModal.classList.add('hidden'));
+
+    // Enhanced form submission with URL validation
+    addStreamForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(addStreamForm);
+        const data = Object.fromEntries(formData.entries());
+        data.is_active = formData.get('is_active') ? true : false;
+
+        // Show testing message in the form
+        const urlValidation = document.getElementById('urlValidation');
+        urlValidation.textContent = 'Testing URL...';
+        urlValidation.className = 'text-code-sm font-code-sm mt-1 text-primary-fixed-dim crt-glow-amber';
+        urlValidation.classList.remove('hidden');
+
+        try {
+            const testResult = await testHLSStream(data.url);
+
+            if (!testResult.success) {
+                urlValidation.textContent = `✗ ${testResult.error}`;
+                urlValidation.className = 'text-code-sm font-code-sm mt-1 text-error';
                 return;
             }
-            
-            urlValidation.textContent = 'Testing URL...';
-            urlValidation.className = 'text-sm mt-1 text-blue-400';
-            urlValidation.classList.remove('hidden');
-            
-            const testResult = await testHLSStream(url);
-            
-            if (testResult.success) {
-                urlValidation.textContent = '✅ URL looks good - valid HLS stream';
-                urlValidation.className = 'text-sm mt-1 text-green-400';
-            } else {
-                urlValidation.textContent = `❌ ${testResult.error}`;
-                urlValidation.className = 'text-sm mt-1 text-red-400';
-            }
-        });
 
-        // Delete Stream Logic
-        document.getElementById('deleteStream').addEventListener('click', async () => {
-            const selectedUrl = videoSrcInput.value;
-            if (!selectedUrl) return alert("Please select a stream first.");
-            if (!confirm("Are you sure you want to delete this stream?")) return;
+            // If URL is valid, proceed to save
+            urlValidation.textContent = '✓ URL is valid - Saving...';
+            urlValidation.className = 'text-code-sm font-code-sm mt-1 text-secondary crt-glow-green';
 
-            const streamsRes = await fetch('/api/hls/streams/');
-            const streams = await streamsRes.json();
-            const stream = streams.find(s => s.url === selectedUrl);
-
-            if (!stream) return alert("Stream not found.");
-
-            const response = await fetch(`/api/hls/streams/${stream.id}/`, {
-                method: "DELETE",
+            const response = await fetch("/api/hls/streams/", {
+                method: "POST",
                 headers: {
+                    "Content-Type": "application/json",
                     "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value,
                 },
+                body: JSON.stringify(data)
             });
 
             if (response.ok) {
-                alert("Stream deleted successfully!");
-                videoSrcInput.querySelector(`option[value="${selectedUrl}"]`).remove();
+                urlValidation.textContent = '✓ Stream added successfully!';
+                setTimeout(() => {
+                    formModal.classList.add('hidden');
+                    window.location.reload();
+                }, 1000);
             } else {
-                alert("Error deleting stream");
+                urlValidation.textContent = '✗ Error saving stream';
+                urlValidation.className = 'text-code-sm font-code-sm mt-1 text-error';
             }
-        });
+        } catch (error) {
+            urlValidation.textContent = '✗ Unexpected error occurred';
+            urlValidation.className = 'text-code-sm font-code-sm mt-1 text-error';
+        }
+    });
 
-        window.addEventListener('load', () => {
-            if (videoSrcInput.value) loadVideo(videoSrcInput.value);
-        });
+    // Real-time URL validation
+    const urlInput = document.querySelector('input[name="url"]');
+    urlInput.addEventListener('blur', async function() {
+        const url = this.value.trim();
+        const urlValidation = document.getElementById('urlValidation');
 
-        // Add error handling function
-        function handleVideoErrors() {
-            video.addEventListener('error', function(e) {
-                console.error('Video error:', e);
-                alert('Error loading video stream. Please check the URL and try again.');
-            });
-
-            video.addEventListener('waiting', function() {
-                console.log('Video buffering...');
-            });
-
-            video.addEventListener('playing', function() {
-                console.log('Video playback started');
-            });
+        if (!url) {
+            urlValidation.classList.add('hidden');
+            return;
         }
 
-        // Auto-load when stream selection changes
-        videoSrcInput.addEventListener('change', function() {
-            const newSrc = this.value;
-            if (newSrc) loadVideo(newSrc);
+        urlValidation.textContent = 'Testing URL...';
+        urlValidation.className = 'text-code-sm font-code-sm mt-1 text-primary-fixed-dim crt-glow-amber';
+        urlValidation.classList.remove('hidden');
+
+        const testResult = await testHLSStream(url);
+
+        if (testResult.success) {
+            urlValidation.textContent = '✓ URL looks good - valid HLS stream';
+            urlValidation.className = 'text-code-sm font-code-sm mt-1 text-secondary crt-glow-green';
+        } else {
+            urlValidation.textContent = `✗ ${testResult.error}`;
+            urlValidation.className = 'text-code-sm font-code-sm mt-1 text-error';
+        }
+    });
+
+    // Delete Stream Logic
+    document.getElementById('deleteStream').addEventListener('click', async () => {
+        const selectedUrl = videoSrcInput.value;
+        if (!selectedUrl) return alert("Please select a stream first.");
+        if (!confirm("Are you sure you want to delete this stream?")) return;
+
+        const streamsRes = await fetch('/api/hls/streams/');
+        const streams = await streamsRes.json();
+        const stream = streams.find(s => s.url === selectedUrl);
+
+        if (!stream) return alert("Stream not found.");
+
+        const response = await fetch(`/api/hls/streams/${stream.id}/`, {
+            method: "DELETE",
+            headers: {
+                "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
         });
 
-        // Call error handling
-        handleVideoErrors();
-    </script>
+        if (response.ok) {
+            alert("Stream deleted successfully!");
+            videoSrcInput.querySelector(`option[value="${selectedUrl}"]`).remove();
+        } else {
+            alert("Error deleting stream");
+        }
+    });
+
+    window.addEventListener('load', () => {
+        if (videoSrcInput.value) loadVideo(videoSrcInput.value);
+    });
+
+    // Add error handling function
+    function handleVideoErrors() {
+        video.addEventListener('error', function(e) {
+            console.error('Video error:', e);
+            alert('Error loading video stream. Please check the URL and try again.');
+        });
+
+        video.addEventListener('waiting', function() {
+            console.log('Video buffering...');
+        });
+
+        video.addEventListener('playing', function() {
+            console.log('Video playback started');
+        });
+    }
+
+    // Auto-load when stream selection changes
+    videoSrcInput.addEventListener('change', function() {
+        const newSrc = this.value;
+        if (newSrc) loadVideo(newSrc);
+    });
+
+    // Call error handling
+    handleVideoErrors();
+</script>
 
 {% endblock %}
